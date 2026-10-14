@@ -51,15 +51,15 @@ def _build_agent_for_runtime(
 ):
     """为 FastAPI runtime 构造 open-swe 风格的 Agent config。
 
-    open-swe 由 LangGraph Server 注入 `RunnableConfig`。课程版不用
-    langgraph dev，所以在这里显式组装 config，再交给 `agent.server.get_agent`。
+    open-swe 由 LangGraph Server 注入 `RunnableConfig`。课程版不用 ##===================================##===================================
+    langgraph dev，所以在这里显式组装 config，再交给 `agent.server.get_agent`。 ##===================================##===================================
 
     `thread_id` 用于绑定 LangGraph checkpoint、Store 业务记录和前端事件流。
-    `task_kind` 会影响系统提示词、工具权限、中间件行为和运行保护阈值。
-    `repo_url` 会继续向下传给 Agent 工厂，用于初始化仓库映射、仓库记忆和运行上下文。
+    `task_kind` 会影响系统提示词、工具权限、中间件行为 和运行保护阈值。
+    `repo_url` 会继续向下传给 Agent 工厂，用于初始化仓库映射、仓库记忆 和运行上下文。
 
     注意：这里每次运行都会重新取得一个 Agent runnable。真正的对话状态不靠这个
-    Python 对象长期驻留，而是靠 checkpoint 和 StoreBackend 持久化。
+    Python 对象长期驻留，而是靠 checkpoint 和 StoreBackend 持久化。##===================================##===================================
     """
 
     configurable: dict[str, Any] = {
@@ -71,9 +71,9 @@ def _build_agent_for_runtime(
         "__is_for_execution__": True,
     }
     if repo_url:
-        # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文和仓库记忆。
+        # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
         configurable["repo_url"] = repo_url
-    return get_agent({"configurable": configurable})
+    return get_agent({"configurable": configurable})##===================================
 
 
 def _ensure_repo_memory_for_repo(repo: Any, project_dir: str) -> None:

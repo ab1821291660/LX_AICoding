@@ -43,7 +43,7 @@ def find_pids_by_ports(ports: Iterable[int] = DEFAULT_PORTS) -> list[int]:
     """
 
     if os.name != "nt":
-        return _find_pids_by_ports_unix(ports)
+        return _find_pids_by_ports_unix(ports)##===================================
 
     port_list = ",".join(str(port) for port in ports)
     command = (
@@ -51,7 +51,7 @@ def find_pids_by_ports(ports: Iterable[int] = DEFAULT_PORTS) -> list[int]:
         "| Where-Object { $_.State -eq 'Listen' } "
         "| Select-Object -ExpandProperty OwningProcess -Unique"
     )
-    result = _run_powershell(command)
+    result = _run_powershell(command)##===================================
 
     pids: list[int] = []
     if result.returncode == 0:
@@ -158,7 +158,7 @@ def stop_pids(pids: Iterable[int]) -> list[int]:
             continue
         if os.name == "nt":
             command = f"Stop-Process -Id {pid} -Force -ErrorAction SilentlyContinue"
-            _run_powershell(command)
+            _run_powershell(command)##===================================
         else:
             try:
                 os.kill(pid, signal.SIGTERM)
@@ -171,15 +171,15 @@ def stop_pids(pids: Iterable[int]) -> list[int]:
 def stop_ports(ports: Iterable[int] = DEFAULT_PORTS) -> list[int]:
     """停止指定端口上的监听进程。"""
 
-    pids = find_pids_by_ports(ports)
-    return stop_pids(pids)
+    pids = find_pids_by_ports(ports)##===================================
+    return stop_pids(pids)##===================================
 
 
 def main() -> None:
     """清理课程项目常用的后端和前端服务端口。"""
 
     ports = DEFAULT_PORTS
-    stopped = stop_ports(ports)
+    stopped = stop_ports(ports)##===================================
     if stopped:
         print(f"已停止端口 {ports} 对应进程：{stopped}")
     else:

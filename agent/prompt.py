@@ -175,7 +175,7 @@ READ_ONLY_PROMPTS: dict[TaskKind, str] = {
 
 def get_system_prompt(task_kind: TaskKind = "coding") -> str:
     """根据任务类型生成系统提示词。"""
-    workspace_memory = load_workspace_memory()##===================================
+    workspace_memory = load_workspace_memory()##memoryBAK读取本地工作区memory_workspace.md事实记忆 ##===================================
     memory_section = f"\n\n长期记忆：\n{workspace_memory}" if workspace_memory else ""
 
 

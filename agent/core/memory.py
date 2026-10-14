@@ -11,7 +11,7 @@ WORKSPACE_MEMORY_PATH = MEMORY_DIR / "workspace.md"
 
 
 def load_workspace_memory() -> str:
-    """读取本地工作区事实记忆。
+    """读取本地工作区  事实记忆。
 
     这份记忆只描述 `AI_WORKSPACE_ROOT` 下各个固定目录的客观用途，例如
     `projects/` 是仓库目录、`runtimes/` 是运行环境目录、`.secrets/` 是敏感目录。

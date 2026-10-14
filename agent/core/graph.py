@@ -5,9 +5,9 @@ from agent.core.persistence import make_checkpointer,\
 from agent.core.settings import CHECKPOINT_DB_PATH, LANGGRAPH_STORE_DB_PATH, STORE_DB_PATH
 from agent.core.task_intent import TaskKind##意图分类##===================================
 from agent.store import LocalSqliteStore
-_store: LocalSqliteStore | None = None##面向页面和业务查询##===================================##===================================
-_checkpointer = None##面向 Agent 的 thread state 和消息历史恢复 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
-_langgraph_store = None##专门服务 `/memories/...` 长期记忆文件 ##===================================##===================================
+_store: LocalSqliteStore | None = None##- 面向页面和业务查询##===================================##===================================
+_checkpointer = None##- 面向 Agent 的 thread state 和消息历史恢复 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
+_langgraph_store = None##- 专门服务 `/memories/...` 长期记忆文件 ##===================================##===================================
 
 
 def get_store() -> LocalSqliteStore:
@@ -34,7 +34,7 @@ def get_checkpointer():
 
     global _checkpointer
     if _checkpointer is None:
-        _checkpointer = make_checkpointer(CHECKPOINT_DB_PATH)
+        _checkpointer = make_checkpointer(CHECKPOINT_DB_PATH)##===================================
     return _checkpointer
 
 
@@ -43,13 +43,13 @@ def get_langgraph_store():
 
     业务数据仍然写入 `store.sqlite`，
     checkpoint 仍然写入 `checkpoints.sqlite`。
-    这里的 store 专门服务 `/memories/...` 长期记忆文件，内部表结构由
+    这里的 store 专门服务 `/memories/...` 长期记忆文件，内部表结构由 ##===================================##===================================
     LangGraph Store 自己创建和维护。
     """
 
     global _langgraph_store
     if _langgraph_store is None:
-        _langgraph_store = make_langgraph_store(LANGGRAPH_STORE_DB_PATH)
+        _langgraph_store = make_langgraph_store(LANGGRAPH_STORE_DB_PATH)##===================================
     return _langgraph_store
 
 

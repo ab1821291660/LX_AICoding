@@ -360,6 +360,18 @@ def create_repo_backend(
     )
 
 
+# configurable: dict[str, Any] = {
+#     # thread_id 是 checkpointer 的主键，也是前端当前会话的唯一标识。
+#     "thread_id": thread_id,
+#     # task_kind 会一路传到 agent.server.get_agent，用来选择系统提示词和运行规则。
+#     "task_kind": task_kind,
+#     # 这个标记用于区分“真实执行”和“框架探测图结构”。
+#     "__is_for_execution__": True,
+# }
+# if repo_url:
+#     # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
+#     configurable["repo_url"] = repo_url
+# return get_agent({"configurable": configurable})##===================================
 def get_agent(config: RunnableConfig):
     """按照 指定 thread 构建 DeepAgent。
 

@@ -11,8 +11,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agent.core.graph import build_agent
-from agent.tools.gitee_api import mask_token
+from agent.core.graph import build_agent ##===================================
+from agent.tools.gitee_api import mask_token ##===================================
 
 
 def _short(value: Any, *, limit: int = 500) -> str:
@@ -21,7 +21,7 @@ def _short(value: Any, *, limit: int = 500) -> str:
     if value is None:
         return ""
     text = value if isinstance(value, str) else repr(value)
-    text = mask_token(text)
+    text = mask_token(text)##===================================
     return text[:limit] + ("..." if len(text) > limit else "")
 
 
@@ -93,7 +93,7 @@ def inspect_raw(agent: Any, *, prompt: str, thread_id: str, limit: int) -> None:
         if index >= limit:
             print(f"... raw event limit reached: {limit}")
             break
-        print(f"[raw {index}] {json.dumps(_summarize_raw_event(event), ensure_ascii=False)}")
+        print(f"[raw {index}] {json.dumps(_summarize_raw_event(event), ensure_ascii=False)}")##===================================
     try:
         output = stream.output
         print("[raw output]", _short(output, limit=1200))
@@ -186,20 +186,19 @@ def main() -> None:
     args = parser.parse_args()
 
     thread_id = f"inspect-stream-{uuid.uuid4()}"
-    agent = build_agent(thread_id, task_kind=args.task_kind)
+    agent = build_agent(thread_id,##===================================
+                        task_kind=args.task_kind)
     print("thread_id", thread_id)
     print("task_kind", args.task_kind)
     print("prompt", args.prompt)
 
     if args.mode in {"raw", "all"}:
-        inspect_raw(agent, prompt=args.prompt, thread_id=thread_id, limit=args.limit)
+        inspect_raw(agent, prompt=args.prompt, thread_id=thread_id, limit=args.limit)##===================================
     if args.mode in {"interleave", "all"}:
-        inspect_interleave(agent, prompt=args.prompt, thread_id=thread_id, limit=args.limit)
+        inspect_interleave(agent, prompt=args.prompt, thread_id=thread_id, limit=args.limit)##===================================
     if args.mode in {"messages", "all"}:
-        inspect_projection(agent, prompt=args.prompt, thread_id=thread_id, projection="messages", limit=args.limit)
+        inspect_projection(agent, prompt=args.prompt, thread_id=thread_id, projection="messages", limit=args.limit)##===================================
     if args.mode in {"tool_calls", "all"}:
         inspect_projection(agent, prompt=args.prompt, thread_id=thread_id, projection="tool_calls", limit=args.limit)
-
-
 if __name__ == "__main__":
     main()

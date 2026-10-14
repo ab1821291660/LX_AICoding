@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.stop_all import stop_ports  # noqa: E402
+from scripts.stop_all import stop_ports  # noqa: E402  ##===================================
 
 
 def python_executable() -> str:
@@ -61,15 +61,15 @@ def start_process(
 def main() -> None:
     """同时启动课程版后端和前端。
 
-    后端运行在 http://127.0.0.1:2024。
-    前端运行在 http://127.0.0.1:3000。
-    按 Ctrl+C 会同时停止两个进程。
+    后端运行在 http://127.0.0.1:2024。 ##===================================
+    前端运行在 http://127.0.0.1:3000。 ##===================================
+    按 Ctrl+C 会同时停止两个进程。 ##===================================
     """
 
     backend = start_process(
         "backend",
         [
-            python_executable(),
+            python_executable(),##===================================
             "-m",
             "uvicorn",
             "agent.app:app",
@@ -82,7 +82,7 @@ def main() -> None:
     )
     frontend = start_process(
         "frontend",
-        vite_command(),
+        vite_command(),##===================================
         PROJECT_ROOT / "ui",
         env={"VITE_DASHBOARD_API_BASE_URL": "http://127.0.0.1:2024"},
     )
@@ -109,7 +109,7 @@ def main() -> None:
             except subprocess.TimeoutExpired:
                 process.kill()
         # 再按端口兜底清理，处理 PyCharm 停止按钮或 Windows 进程树残留。
-        stopped = stop_ports((2024, 3000))
+        stopped = stop_ports((2024, 3000))##===================================
         if stopped:
             print(f"已清理残留服务进程：{stopped}")
         sys.exit(0)
