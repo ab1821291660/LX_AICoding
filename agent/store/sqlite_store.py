@@ -221,12 +221,12 @@ class LocalSqliteStore:
             )
             self._conn.commit()
 
-    def get_thread(self, thread_id: str) -> dict[str, Any] | None:
+    def get_thread(self, thread_id: str) -> dict[str, Any] | None:##===================================
         with self._lock:
             row = self._conn.execute(
                 "SELECT * FROM threads WHERE thread_id = ?", (thread_id,)
             ).fetchone()
-            return self._row_to_dict(row)
+            return self._row_to_dict(row)##===================================
 
     def list_threads(self, limit: int = 50) -> list[dict[str, Any]]:
         with self._lock:

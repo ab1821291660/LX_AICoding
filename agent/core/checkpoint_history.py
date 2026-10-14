@@ -6,10 +6,53 @@ from hashlib import sha1
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-
-from agent.core.graph import get_checkpointer
+from agent.core.graph import get_checkpointer##===================================
 
 logger = logging.getLogger("agent.checkpoint_history")
+
+
+def _delta_messages_from_checkpoint(thread_id: str) -> list[Any]:
+    """读取某个 thread 的 messages 通道历史。
+
+    `SqliteSaver.get_tuple()` 的最新快照不一定直接包含 `channel_values["messages"]`。
+
+    DeepAgents / LangGraph 新版本会把通道历史保存在 delta channel 里，所以这里使用
+    `get_delta_channel_history(config, channels=["messages"])` 读取 seed + writes。
+
+    注意：seed 是一个基础快照，writes 是后续增量。不同版本可能重复返回同一条消息，
+    后续会按 role/content/message_id 去重。
+    """
+
+    checkpointer = get_checkpointer()  ##===================================
+    config = {"configurable": {"thread_id": thread_id}}
+    try:
+        history = checkpointer.get_delta_channel_history(config=config, channels=["messages"])
+    except Exception:
+        logger.exception("读取 checkpoint messages 通道失败：thread_id=%s", thread_id)
+        return []
+    channel_history = history.get("messages") if isinstance(history, dict) else None
+    if not isinstance(channel_history, dict):
+        return []
+
+    messages: list[Any] = []
+    seed = channel_history.get("seed")
+    seed_value = getattr(seed, "value", None)
+    if isinstance(seed_value, list):
+        messages.extend(seed_value)
+
+    writes = channel_history.get("writes")
+    if isinstance(writes, list):
+        for write in writes:
+            if not isinstance(write, tuple) or len(write) < 3:
+                continue
+            value = write[2]
+            if isinstance(value, list):
+                messages.extend(value)
+            elif value is not None:
+                messages.append(value)
+    return messages
+
+
 
 
 def _content_to_text(content: Any) -> str:
@@ -35,49 +78,6 @@ def _content_to_text(content: Any) -> str:
                     parts.append(str(text))
         return "\n".join(part.strip() for part in parts if part and part.strip()).strip()
     return str(content).strip()
-
-
-def _delta_messages_from_checkpoint(thread_id: str) -> list[Any]:
-    """读取某个 thread 的 messages 通道历史。
-
-    `SqliteSaver.get_tuple()` 的最新快照不一定直接包含 `channel_values["messages"]`。
-    DeepAgents / LangGraph 新版本会把通道历史保存在 delta channel 里，所以这里使用
-    `get_delta_channel_history(config, channels=["messages"])` 读取 seed + writes。
-
-    注意：seed 是一个基础快照，writes 是后续增量。不同版本可能重复返回同一条消息，
-    后续会按 role/content/message_id 去重。
-    """
-
-    checkpointer = get_checkpointer()
-    config = {"configurable": {"thread_id": thread_id}}
-    try:
-        history = checkpointer.get_delta_channel_history(config=config, channels=["messages"])
-    except Exception:
-        logger.exception("读取 checkpoint messages 通道失败：thread_id=%s", thread_id)
-        return []
-
-    channel_history = history.get("messages") if isinstance(history, dict) else None
-    if not isinstance(channel_history, dict):
-        return []
-
-    messages: list[Any] = []
-    seed = channel_history.get("seed")
-    seed_value = getattr(seed, "value", None)
-    if isinstance(seed_value, list):
-        messages.extend(seed_value)
-
-    writes = channel_history.get("writes")
-    if isinstance(writes, list):
-        for write in writes:
-            if not isinstance(write, tuple) or len(write) < 3:
-                continue
-            value = write[2]
-            if isinstance(value, list):
-                messages.extend(value)
-            elif value is not None:
-                messages.append(value)
-
-    return messages
 
 
 def _extract_user_prompt(text: str) -> str:
@@ -201,8 +201,9 @@ def _compact_content(content: str) -> str:
     """把正文压缩成稳定去重文本。
 
     checkpoint 的 seed 和 writes 可能重复返回同一条可见消息，也可能因为换行、
-    多个空格等格式差异导致文本看起来不同。这里把空白统一压缩后再参与去重和
-    稳定 id 计算，避免前端历史出现重复气泡。
+    多个空格等格式差异导致文本看起来不同。这里把空白统一压缩后
+
+    再参与去重和稳定 id 计算，避免前端历史出现重复气泡。
     """
 
     return re.sub(r"\s+", " ", (content or "").strip())
@@ -228,7 +229,8 @@ def visible_checkpoint_messages(thread_id: str) -> list[dict[str, Any]]:
     - agent：保留技术方案、审查报告、总结、问答等有价值正文。
     - tool/system/短过程消息：过滤。
 
-    如果 checkpoint 读取失败或没有可用消息，返回空列表。前端历史不再回退读取 Store，
+    如果 checkpoint 读取失败或没有可用消息，返回空列表。
+    前端历史不再回退读取 Store，
     Store 只保存任务摘要、运行状态、review findings 等业务数据。
     """
 

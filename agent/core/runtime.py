@@ -814,12 +814,13 @@ def run_plan_response_task(
         raise
 
 
+def ________():pass
 def run_agent_task(##===================================
     *,
     repo_url: str,
     prompt: str,
     thread_id: str | None = None,
-    event_sink: RuntimeEventSink | None = None,
+    event_sink: RuntimeEventSink | None = None,##===================================
 ) -> dict[str, Any]:
     """运行一次普通 Agent 任务的总入口。
 
@@ -827,10 +828,15 @@ def run_agent_task(##===================================
     它的职责不是直接解决问题，而是决定本轮应该走哪条流程：
 
     1. 工作区查询和 git pull 这类简单任务直接执行，不调用模型。
-    2. 首轮 coding 需求先转成 planning，输出技术方案并等待用户确认。
+
+    2. 首轮coding需求先转成planning，输出技术方案并等待用户确认。
     3. 用户确认后，从 checkpoint 找到上一轮方案，再切换为 coding。
+
     4. 普通 qa、analysis、review 等只读任务直接构建对应 task_kind 的 DeepAgent。
-    5. 任务结束后更新 Store 状态、run_events 和仓库级长期记忆。
+    5. 任务结束后
+    更新Store状态、##===================================
+    run_events ##===================================
+    和仓库级长期记忆。##===================================
 
     注意：Store 不作为正常历史恢复来源。用户消息和 assistant 正文以 checkpoint 为准。
     """
@@ -844,10 +850,10 @@ def run_agent_task(##===================================
 
     # 第一层用户意图识别。这里只得到粗粒度 task_kind，后续还会经过方案确认、
     # 只读权限和 coding 前置方案等 runtime 策略兜底。
-    task_kind = classify_task_kind(prompt)
+    task_kind = classify_task_kind(prompt)##===================================##===================================
     # 新任务创建新 thread；继续对话时使用前端已有 thread_id，确保 checkpoint 接上历史。
     thread_id = thread_id or str(uuid.uuid4())
-    store = get_store()
+    store = get_store()##Store保存的是平台业务数据##===================================
     existing_thread = store.get_thread(thread_id)
     approved_plan_text: str | None = None
     # display_prompt 是本轮用户真实输入，用于前端展示；coding_prompt 是传给 Agent 的执行目标。
