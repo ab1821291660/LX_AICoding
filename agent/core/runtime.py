@@ -36,7 +36,7 @@ from agent.core.task_intent import classify_task_kind, is_pull_only_task, is_wor
 from agent.server import get_agent
 from agent.tools.gitee_api import mask_token, parse_gitee_repo_url
 
-logger = logging.getLogger("agent.run.runtime")
+logger = logging.getLogger("agent.run.runtime") ##===================================##===================================
 
 # event_sink 是 FastAPI SSE 层传进来的回调。
 # runtime 自己不关心 HTTP 细节，只把“有新内容了”通知给上层。
@@ -61,7 +61,6 @@ def _build_agent_for_runtime(
     注意：这里每次运行都会重新取得一个 Agent runnable。真正的对话状态不靠这个
     Python 对象长期驻留，而是靠 checkpoint 和 StoreBackend 持久化。##===================================##===================================
     """
-
     configurable: dict[str, Any] = {
         # thread_id 是 checkpointer 的主键，也是前端当前会话的唯一标识。
         "thread_id": thread_id,
@@ -74,6 +73,8 @@ def _build_agent_for_runtime(
         # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
         configurable["repo_url"] = repo_url
     return get_agent({"configurable": configurable})##===================================
+
+
 
 
 def _ensure_repo_memory_for_repo(repo: Any, project_dir: str) -> None:

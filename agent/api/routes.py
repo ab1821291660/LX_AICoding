@@ -33,3 +33,5 @@ def health() -> dict[str, Any]:
         "main_model": get_env("MAIN_MODEL", "deepseek-v4-pro"),
         "has_gitee_token": bool(get_env("GITEE_TOKEN")),
     }
+
+

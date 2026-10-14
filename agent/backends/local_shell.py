@@ -35,20 +35,20 @@ from deepagents.backends.protocol import (  # DeepAgents 协议：文件操作�
     ReadResult,
     WriteResult,
 )
-from deepagents.backends.sandbox import BaseSandbox  # 沙箱基类
+from deepagents.backends.sandbox import BaseSandbox  # 沙箱基类 ##===================================##===================================##===================================##===================================
 
 
 
 
-from agent.core.settings import WORKSPACE_ROOT  # 统一的工作区根目录（由 settings.py 管理）
+from .permissions import normalize_safe_command##===================================##===================================
+from .workspace import Workspace##===================================##===================================
+logger = logging.getLogger("agent.run.shell")##===================================
+
+
+
 from agent.env_utils import get_env
-
-from .permissions import normalize_safe_command##===================================
-from .workspace import Workspace##===================================
-logger = logging.getLogger("agent.run.shell")
+from agent.core.settings import WORKSPACE_ROOT#3return r"E:\ai_workspace"----#Agent操作真实代码仓库时-使用的工作区。# 统一的工作区根目录（由 settings.py 管理）
 IS_WINDOWS = os.name == "nt"
-
-
 # ── 虚拟路径常量 ──────────────────────────────────────────────
 # Agent 内部通过 /projects、/skills 等虚拟路径访问文件，
 # 这里定义所有虚拟路径的映射关系。
@@ -59,6 +59,7 @@ VIRTUAL_REVIEWS = "/reviews"
 VIRTUAL_RUNTIMES = "/runtimes"
 VIRTUAL_TMP = "/tmp"
 VIRTUAL_LOGS = "/logs"
+
 
 # 匹配命令中的 Windows 绝对路径（如 D:\xxx）
 _DRIVE_PATH_RE = re.compile(r"(?<![A-Za-z0-9])([A-Za-z]:[\\/][^\s\"';&|<>]*)")
@@ -99,7 +100,6 @@ def _mask_token(text: str) -> str:
     如果 Git 认证失败、远端 URL 展开或调试信息里包含 token，就可能造成泄露。
     因此所有准备进入日志和模型上下文的文本，都应先经过这个函数脱敏。
     """
-
     masked = text
     for token_name in ("GITEE_TOKEN", "SCM_GITEE_TOKEN"):
         token = get_env(token_name).strip()
@@ -116,7 +116,6 @@ class CommandResult:
     `command/cwd/exit_code/stdout/stderr` 这种更接近 subprocess 的结构。
     保留这个 dataclass 可以让旧工具逐步迁移，而不需要一次性改完整个调用链。
     """
-
     command: str
     cwd: str
     exit_code: int
@@ -124,20 +123,32 @@ class CommandResult:
     stderr: str
 
 
-class LocalShellBackend(BaseSandbox):
+
+
+class LocalShellBackend(BaseSandbox):##===================================##===================================##===================================##===================================
     """本地 DeepAgents backend。
 
     核心职责：
     1. 实现 DeepAgents 原生文件协议：`ls/read/write/edit/glob/grep/upload/download`；
     2. 实现命令执行协议：`execute()`，负责 Windows/Linux 适配、路径转换、超时和脱敏；
-    3. 实现本地工作区布局：projects、skills、policies、reviews、runtimes、tmp、logs；
+    3. 实现本地工作区布局：
+    projects、
+    skills、
+    policies、
+    reviews、
+    runtimes、
+    tmp、
+    logs；
     4. 实现 Gitee Git 非交互认证：通过 `GIT_ASKPASS` 注入 token，避免后台进程弹窗；
     5. 保留旧版兼容接口：`run/read_file/write_file/list_files`，避免一次性重构业务工具。
 
     这个类不是“完全可信的 shell 代理”，而是课程项目里的受控本地执行层。
-    真正企业生产环境还应叠加容器隔离、系统用户隔离、审计日志和更完整的权限策略。
+    真正企业生产环境还应叠加
+        容器隔离、
+        系统用户隔离、
+        审计日志
+        和更完整的权限策略。
     """
-
     def __init__(
         self,
         workspace: Workspace | str | os.PathLike[str] | None = None,
@@ -150,7 +161,7 @@ class LocalShellBackend(BaseSandbox):
             configured_root = workspace.root
         else:
             configured_root = workspace or os.environ.get("LOCAL_SHELL_WORKSPACE") or str(WORKSPACE_ROOT)
-            self.workspace = Workspace(Path(configured_root))
+            self.workspace = Workspace(Path(configured_root))##===================================##===================================
 
         self.root = Path(configured_root).expanduser().resolve()
         # 工作区子目录规划
@@ -924,7 +935,7 @@ class LocalShellBackend(BaseSandbox):
             if denied:
                 raise PermissionError(f"命令被拒绝：{denied}")
         # 第二层安全校验：命令白名单、危险 shell 操作符和危险片段收敛。
-        safe_command = normalize_safe_command(command)
+        safe_command = normalize_safe_command(command)##===================================##===================================
         return cwd_path, self._prepare_command(safe_command, cwd_path=cwd_path)
 
     def _virtual_command_path_replacement(self, match: re.Match[str]) -> str:
@@ -973,24 +984,24 @@ class LocalShellBackend(BaseSandbox):
         return env
 
 
+
+def ________():pass
 # ── 模块级单例 ────────────────────────────────────────────
-
 _BACKEND: LocalShellBackend | None = None
-
-
 def get_local_shell_backend() -> LocalShellBackend:
     """获取全局唯一的 LocalShellBackend 实例（单例）。"""
     global _BACKEND
     if _BACKEND is None:
-        _BACKEND = LocalShellBackend()
+        _BACKEND = LocalShellBackend()##===================================
     return _BACKEND
 
 
 def create_local_shell_backend(_sandbox_id: str | None = None) -> LocalShellBackend:
     """DeepAgents 工厂函数：创建（或复用）backend 实例。"""
-    return get_local_shell_backend()
+    return get_local_shell_backend()##===================================
 
 
 def validate_local_shell_startup_config() -> None:
     """启动时验证：确保 backend 可以正常创建。"""
-    get_local_shell_backend()
+    get_local_shell_backend()##===================================
+

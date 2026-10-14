@@ -5,15 +5,17 @@ import sys
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
-from agent.core import settings
+from agent.core import settings ##===================================
+
+
 
 
 class PrefixLoggerFilter(logging.Filter):
     """只允许指定 logger 前缀进入某个 handler。
 
     当前项目保留两类文件日志：
-    - backend.log：完整后端日志；
-    - agent-runs.log：只记录 Agent 执行链路，也就是 agent.run.*。
+    - backend.log：完整后端日志；##===================================
+    - agent-runs.log：只记录 Agent 执行链路，也就是 agent.run.*。##===================================
 
     用 filter 分离日志，比在业务代码里手动写多个 logger 更稳定，也更符合
     企业项目常见的“全量日志 + 关键业务域日志”设计。
@@ -25,6 +27,8 @@ class PrefixLoggerFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         return any(record.name.startswith(prefix) for prefix in self.prefixes)
+
+
 
 
 def _configure_console_encoding() -> None:
@@ -111,14 +115,14 @@ def configure_logging() -> None:
     console_handler.setLevel(_log_level())
     console_handler.setFormatter(formatter)
 
-    backend_handler = _make_timed_file_handler(settings.backend_log_path())
+    backend_handler = _make_timed_file_handler(settings.backend_log_path())##return LOG_DIR / "backend.log" ##===================================
     backend_handler.setLevel(_log_level())
     backend_handler.setFormatter(formatter)
 
-    agent_handler = _make_timed_file_handler(settings.agent_log_path())
+    agent_handler = _make_timed_file_handler(settings.agent_log_path())##return LOG_DIR / "agent-runs.log" ##===================================
     agent_handler.setLevel(_log_level())
     agent_handler.setFormatter(formatter)
-    agent_handler.addFilter(PrefixLoggerFilter("agent.run"))
+    agent_handler.addFilter(PrefixLoggerFilter("agent.run"))##===================================##===================================
 
     root_logger.addHandler(console_handler)
     root_logger.addHandler(backend_handler)

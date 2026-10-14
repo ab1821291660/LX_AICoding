@@ -5,7 +5,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]##项目根目录LX_AICoding
 LOCAL_ENV = PROJECT_ROOT / ".env"##===================================
 
 
@@ -20,7 +20,6 @@ def _load_non_empty_env(path: Path, *, override: bool) -> None:
     - open-swe 的 .env 先作为默认值加载。##===================================
     - 本项目 .env 只有填写了非空值时才覆盖默认值。##===================================
     """
-
     if not path.exists():
         return
     for key, value in dotenv_values(path).items():
@@ -59,3 +58,4 @@ def require_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
+
