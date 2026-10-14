@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from agent.core.persistence import make_checkpointer, make_langgraph_store
+from agent.core.persistence import make_checkpointer,\
+                                   make_langgraph_store
 from agent.core.settings import CHECKPOINT_DB_PATH, LANGGRAPH_STORE_DB_PATH, STORE_DB_PATH
-from agent.core.task_intent import TaskKind
+from agent.core.task_intent import TaskKind##意图分类##===================================
 from agent.store import LocalSqliteStore
-
-_store: LocalSqliteStore | None = None
-_checkpointer = None
-_langgraph_store = None
+_store: LocalSqliteStore | None = None##面向页面和业务查询##===================================##===================================
+_checkpointer = None##面向 Agent 的 thread state 和消息历史恢复 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
+_langgraph_store = None##专门服务 `/memories/...` 长期记忆文件 ##===================================##===================================
 
 
 def get_store() -> LocalSqliteStore:
@@ -15,8 +15,8 @@ def get_store() -> LocalSqliteStore:
 
     Store 保存的是平台业务数据，例如任务列表、仓库地址、PR URL、review findings。
     它和 LangGraph checkpoint 是两套数据：
-    - Store 面向页面和业务查询。
-    - Checkpoint 面向 Agent 的 thread state 和消息历史恢复。
+    - Store 面向页面和业务查询。##===================================##===================================
+    - Checkpoint 面向 Agent 的 thread state 和消息历史恢复。 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
     """
 
     global _store
@@ -28,7 +28,7 @@ def get_store() -> LocalSqliteStore:
 def get_checkpointer():
     """获取 LangGraph SQLite checkpointer。
 
-    checkpointer 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。
+    Checkpoint 面向 Agent 的 thread state 和消息历史恢复。 checkpointer 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
     课程版显式把 checkpoint 写到 data/checkpoints.sqlite，方便课堂演示重启恢复。
     """
 
@@ -41,7 +41,8 @@ def get_checkpointer():
 def get_langgraph_store():
     """获取 DeepAgents StoreBackend 使用的 LangGraph SQLite Store。
 
-    业务数据仍然写入 `store.sqlite`，checkpoint 仍然写入 `checkpoints.sqlite`。
+    业务数据仍然写入 `store.sqlite`，
+    checkpoint 仍然写入 `checkpoints.sqlite`。
     这里的 store 专门服务 `/memories/...` 长期记忆文件，内部表结构由
     LangGraph Store 自己创建和维护。
     """
@@ -55,13 +56,11 @@ def get_langgraph_store():
 def build_agent(thread_id: str, task_kind: TaskKind = "coding"):
     """构建一个绑定 thread_id 的 DeepAgent 兼容入口。
 
-    真实创建逻辑已经迁移到 `agent.server.get_agent(config)`，这样项目结构更接近
-    open-swe 的 LangGraph Server 入口。保留这个函数是为了兼容课程脚本和已有
-    FastAPI runtime 调用点。
+    真实创建逻辑已经迁移到 `agent.server.get_agent(config)`，这样项目结构更接近 ##===================================##===================================
+    open-swe 的 LangGraph Server 入口。
+    保留这个函数是为了兼容课程脚本和已有FastAPI runtime 调用点。 ##===================================##===================================
     """
-
-    from agent.server import get_agent
-
+    from agent.server import get_agent ##===================================##===================================
     return get_agent(
         {
             "configurable": {

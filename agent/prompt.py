@@ -171,18 +171,21 @@ READ_ONLY_PROMPTS: dict[TaskKind, str] = {
 }
 
 
+
+
 def get_system_prompt(task_kind: TaskKind = "coding") -> str:
     """根据任务类型生成系统提示词。"""
-
-    workspace_memory = load_workspace_memory()
+    workspace_memory = load_workspace_memory()##===================================
     memory_section = f"\n\n长期记忆：\n{workspace_memory}" if workspace_memory else ""
 
+
     if task_kind == "coding":
-        return f"{BASE_SYSTEM_PROMPT}{memory_section}\n\n{CODING_PROMPT}"
-    return f"{BASE_SYSTEM_PROMPT}{memory_section}\n\n{READ_ONLY_PROMPTS.get(task_kind, READ_ONLY_PROMPTS['qa'])}"
+        return f"{BASE_SYSTEM_PROMPT}{memory_section}\n\n{CODING_PROMPT}"##===================================
+    return f"{BASE_SYSTEM_PROMPT}{memory_section}\n\n{READ_ONLY_PROMPTS.get(task_kind, READ_ONLY_PROMPTS['qa'])}"##===================================
+SYSTEM_PROMPT = get_system_prompt("coding")##===================================##===================================
 
 
-SYSTEM_PROMPT = get_system_prompt("coding")
+
 
 REVIEWER_PROMPT = """你是 LX-AICODING 的代码审查智能体。
 你只负责审查，不允许修改代码。

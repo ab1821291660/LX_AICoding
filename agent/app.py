@@ -22,13 +22,13 @@ from agent.env_utils import load_environment
 # 并调用 configure_logging() 初始化日志系统。
 # 这样做的好处是不依赖 langgraph dev 等开发服务器自带的环境加载机制。
 # ---------------------------------------------------------------
-load_environment()
-configure_logging()
+load_environment()##===================================
+configure_logging()##===================================
 
 # 延迟导入 API 路由模块
 # 使用 # noqa: E402 忽略 flake8 关于导入顺序的警告，
 # 因为此处必须等环境变量和日志配置初始化完成后才能导入路由模块。
-from agent.api import dashboard_router, router  # noqa: E402
+from agent.api import dashboard_router, router  # noqa: E402 ##===================================##===================================
 
 # ---------------------------------------------------------------
 # 创建 FastAPI 应用实例

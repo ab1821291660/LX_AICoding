@@ -23,7 +23,7 @@ from typing import Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, field_validator
 
-from agent.core.model import make_intent_model
+from agent.core.model import make_intent_model##===================================
 
 TaskKind = Literal["coding", "analysis", "planning", "qa", "sync", "inspect", "review"]
 

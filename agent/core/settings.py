@@ -10,18 +10,18 @@ from agent.env_utils import get_env
 # E:\my_project\LX_AICoding，Linux/Docker 部署时通常是 /opt/lx-aicoding/app。
 # 后续所有本项目自己的数据文件、日志文件都默认放在这个目录下面，
 # 避免 LangGraph dev 或第三方工具把文件散落到隐藏目录中。
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]##===================================
 
 # SQLite 数据目录：默认使用项目内 data/。
 # 用户仍然可以通过 .env 覆盖，但课程版推荐显式落在项目目录中，
 # 方便讲课时直接打开 SQLite 文件观察 checkpoint 和业务 Store 的区别。
 DATA_DIR = Path(get_env("LX_AICODING_DATA_DIR", str(PROJECT_ROOT / "data"))).resolve()
 CHECKPOINT_DB_PATH = Path(
-    get_env("CHECKPOINT_DB_PATH", str(DATA_DIR / "checkpoints.sqlite"))
+    get_env("CHECKPOINT_DB_PATH", str(DATA_DIR / "checkpoints.sqlite"))##===================================
 ).resolve()
-STORE_DB_PATH = Path(get_env("STORE_DB_PATH", str(DATA_DIR / "store.sqlite"))).resolve()
+STORE_DB_PATH = Path(get_env("STORE_DB_PATH", str(DATA_DIR / "store.sqlite"))).resolve()##===================================
 LANGGRAPH_STORE_DB_PATH = Path(
-    get_env("LANGGRAPH_STORE_DB_PATH", str(DATA_DIR / "langgraph_store.sqlite"))
+    get_env("LANGGRAPH_STORE_DB_PATH", str(DATA_DIR / "langgraph_store.sqlite"))##===================================
 ).resolve()
 
 # 日志目录：所有后端日志和 Agent 运行日志都写入项目内 logs/。
@@ -40,10 +40,7 @@ def log_date_text(target_date: date | None = None) -> str:
     历史文件默认追加 YYYY-MM-DD 后缀，例如 backend.log.2026-07-10。
     这个函数保留给日志 API 读取历史日期时使用。
     """
-
     return (target_date or date.today()).isoformat()
-
-
 def backend_log_path(target_date: date | None = None) -> Path:
     """返回后端日志路径。
 
@@ -53,19 +50,22 @@ def backend_log_path(target_date: date | None = None) -> Path:
 
     if target_date is None:
         return LOG_DIR / "backend.log"
-    return LOG_DIR / f"backend.log.{log_date_text(target_date)}"
-
-
+    return LOG_DIR / f"backend.log.{log_date_text(target_date)}"##===================================
 def agent_log_path(target_date: date | None = None) -> Path:
     """返回 Agent 运行日志路径。"""
 
     if target_date is None:
         return LOG_DIR / "agent-runs.log"
-    return LOG_DIR / f"agent-runs.log.{log_date_text(target_date)}"
+    return LOG_DIR / f"agent-runs.log.{log_date_text(target_date)}"##===================================
 
 
-BACKEND_LOG_PATH = backend_log_path()
-AGENT_LOG_PATH = agent_log_path()
+BACKEND_LOG_PATH = backend_log_path()##===================================
+AGENT_LOG_PATH = agent_log_path()##===================================
+
+
+
+
+
 
 def _default_workspace_root() -> str:
     """返回跨平台默认 Agent 工作区。
@@ -84,7 +84,7 @@ def _default_workspace_root() -> str:
 
 # Agent 操作真实代码仓库时使用的工作区。它和项目源码目录分离，
 # 避免 Agent 在执行用户任务时误改 LX-AICODING 项目本身。
-WORKSPACE_ROOT = Path(get_env("AI_WORKSPACE_ROOT", _default_workspace_root())).expanduser().resolve()
+WORKSPACE_ROOT = Path(get_env("AI_WORKSPACE_ROOT", _default_workspace_root())).expanduser().resolve()##===================================
 PROJECTS_DIR = WORKSPACE_ROOT / "projects"
 
 # DeepAgents skills 目录。课程版统一放在 WORKSPACE_ROOT/skills，

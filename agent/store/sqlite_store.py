@@ -15,7 +15,7 @@ def utc_now() -> str:
 
 
 class LocalSqliteStore:
-    """课程版业务数据 Store。
+    """课程版业务数据 Store。##===================================##===================================
 
     这个类只负责保存“平台业务摘要”，不保存完整聊天历史：
     - threads：任务列表和当前状态。
@@ -24,7 +24,8 @@ class LocalSqliteStore:
     - review_findings：Reviewer Agent 发现的问题。
     - settings：课程项目的少量键值配置。
 
-    完整 messages 和 LangGraph thread state 由 checkpoint 数据库保存。
+    完整 messages 和 ##===================================##===================================
+    LangGraph thread state 由 checkpoint 数据库保存。##===================================##===================================
     """
 
     def __init__(self, db_path: Path):
@@ -35,8 +36,8 @@ class LocalSqliteStore:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(db_path), check_same_thread=False, timeout=30)
         self._conn.row_factory = sqlite3.Row
-        self._configure_connection()
-        self._init_schema()
+        self._configure_connection()##===================================
+        self._init_schema()##===================================
 
     def _configure_connection(self) -> None:
         """配置 SQLite 连接，提升本地多线程读写稳定性。
