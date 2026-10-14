@@ -1,18 +1,15 @@
-"""本地文件后端实现。
-
+"""本地文件后端实现。##===================================##===================================
 这个模块是当前项目 Agent 运行时最关键的工程化组件之一：
 
-1. 它把 DeepAgents 的文件后端协议落到本机文件系统上；
-2. 它把模型看到的虚拟路径（例如 `/projects`、`/skills`）映射到真实工作区目录；
-3. 它为命令执行增加安全守卫、超时控制、Token 脱敏和 Gitee 非交互认证；
+1. 它把 DeepAgents 的文件后端协议落到--本机文件系统上；
+2. 它把模型看到的虚拟路径（例如 `/projects`、`/skills`）映射到--真实工作区目录；
+3. 它为命令执行增加安全守卫、超时控制、Token脱敏和 Gitee非交互认证；
 4. 它保留了旧版 Gitee/Git 工具需要的兼容方法，降低业务代码迁移成本。
 
 讲课时可以把它理解为“Agent 与真实电脑之间的工程边界”：
-Prompt 负责告诉模型应该怎么做，LocalShellBackend 负责决定模型最终能不能读、写、执行。
+Prompt负责告诉模型应该怎么做，，LocalShellBackend负责决定模型最终能不能读、写、执行。
 """
-
 from __future__ import annotations
-
 import fnmatch
 import logging
 import os
@@ -23,6 +20,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+
+
 
 from deepagents.backends.protocol import (  # DeepAgents 协议：文件操作、命令执行等标准接口
     EditResult,
@@ -37,14 +37,15 @@ from deepagents.backends.protocol import (  # DeepAgents 协议：文件操作�
 )
 from deepagents.backends.sandbox import BaseSandbox  # 沙箱基类
 
+
+
+
 from agent.core.settings import WORKSPACE_ROOT  # 统一的工作区根目录（由 settings.py 管理）
 from agent.env_utils import get_env
 
-from .permissions import normalize_safe_command
-from .workspace import Workspace
-
+from .permissions import normalize_safe_command##===================================
+from .workspace import Workspace##===================================
 logger = logging.getLogger("agent.run.shell")
-
 IS_WINDOWS = os.name == "nt"
 
 

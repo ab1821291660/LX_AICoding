@@ -70,7 +70,8 @@ AGENT_LOG_PATH = agent_log_path()##===================================
 
 
 
-
+##===================================##===================================##===================================##===================================
+##===================================##===================================##===================================##===================================
 def _default_workspace_root() -> str:
     """返回跨平台默认 Agent 工作区。
 
@@ -91,6 +92,8 @@ def _default_workspace_root() -> str:
 WORKSPACE_ROOT = Path(get_env("AI_WORKSPACE_ROOT", _default_workspace_root())).expanduser().resolve()##===================================
 PROJECTS_DIR = WORKSPACE_ROOT / "projects"
 
+
 # DeepAgents skills 目录。课程版统一放在 WORKSPACE_ROOT/skills，
 # 这样可以通过 DeepAgents 原生 backend route 暴露为 `/skills/`。
 SKILLS_DIR = WORKSPACE_ROOT / "skills"
+
