@@ -397,22 +397,21 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
         def worker() -> None:
             """在后台线程中运行一次 Agent 任务。
 
-            不能直接在 event_iter 中同步调用 `run_agent_task`，否则 FastAPI 无法边运行边
-            yield SSE 数据。worker 结束后发送 `thread_done` 和 `done`，通知前端收尾。
+            不能直接在 event_iter 中同步调用 `run_agent_task`，否则 FastAPI 无法边运行边yield SSE 数据。
+            worker 结束后发送 `thread_done` 和 `done`，通知前端收尾。
             """
-
             # worker 线程内部必须捕获异常，否则线程异常只会写到后端日志，前端收不到失败事件。
             try:
-                # 真正运行 Agent 的入口。runtime 会做任务分类、方案确认、Agent 构建和事件流消费。
-                run_agent_task(
+                # 真正运行 Agent 的入口。runtime会做任务分类、方案确认、Agent构建、和事件流消费。
+                run_agent_task(##===================================
                     # 本轮任务绑定的 Gitee 仓库地址，已经在外层 API 边界做过规范化。
                     repo_url=repo_url,
-                    # 用户本轮真实输入，runtime 会根据任务类型决定是否包装内部执行上下文。
+                    # 用户本轮真实输入，runtime 会根据任务类型-决定是否包装内部执行上下文。##===================================
                     prompt=content,
                     # 当前会话 id，用于绑定 Store、checkpoint、SSE 和 Agent config。
                     thread_id=thread_id,
                     # 把 runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
-                    event_sink=event_sink,
+                    event_sink=event_sink,##===================================
                 )
 
                 # Agent 正常结束后，重新读取最新 thread 摘要，里面可能已经包含分支、PR、状态等新信息。

@@ -1,11 +1,18 @@
 # LX-AICODING Course Backend
 
 Windows 本地运行版 AI Coding 教学项目。
+参考项目：见LX_AICoding\docs\reviewer_references\open_source_reviewer_comparison.md
+## 1. Alibaba open-code-review -- https://github.com/alibaba/open-code-review
+## 2. serge
+## 3. Robin
+## 4. Vercel OpenReview
+## 5. Dailybot AI Diff Reviewer
+## 6. 对 LX-AICODING 第一版的取舍结论
+
 
 课程方案文档：
-
 ```text
-docs\LX_AICODING_COURSE_REBUILD_PLAN.md
+docs\LX_AICODING_COURSE_REBUILD_PLAN.md ----\LX_AICoding\docs\LX_AICODING_COURSE_REBUILD_PLAN.md
 ```
 
 

@@ -24,7 +24,6 @@ def make_langgraph_store(db_path: Path) -> SqliteStore:
     表结构、文件内容格式和读写协议都由 LangGraph Store 管理，项目代码只负责
     提供数据库路径和复用同一个 store 实例。
     """
-
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path), check_same_thread=False, isolation_level=None)
     store = SqliteStore(conn)

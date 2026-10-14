@@ -26,7 +26,7 @@ from langchain.agents.middleware.types import AgentMiddleware, AgentState
 from langgraph.config import get_config
 
 from agent.core.graph import get_langgraph_store
-from agent.core.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text
+from agent.core.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text ##===================================
 from agent.tools.gitee_api import mask_token, parse_gitee_repo_url
 
 logger = logging.getLogger("agent.run.middleware.memory_update")
@@ -36,17 +36,16 @@ logger = logging.getLogger("agent.run.middleware.memory_update")
 SENSITIVE_MARKERS = (".env", ".secrets", "api_key", "apikey", "private key", "私钥")
 
 
+def ________可get_configurable():pass
 def _repo_url_from_config() -> str | None:
     """从 LangGraph 运行时配置中读取 repo_url。
 
     Runtime 对象本身没有 config 字段（见 langgraph.runtime.Runtime），
     必须通过 langgraph.config.get_config() 才能访问 RunnableConfig。
     """
-    configurable = get_config().get("configurable", {})
+    configurable = get_config().get("configurable", {})##===================================
     repo_url = configurable.get("repo_url") if isinstance(configurable, dict) else None
     return repo_url if isinstance(repo_url, str) and repo_url.strip() else None
-
-
 def _task_kind_from_config() -> str:
     """从运行配置中读取任务类型。
 
@@ -59,6 +58,8 @@ def _task_kind_from_config() -> str:
     return str(configurable.get("task_kind", "unknown")) if isinstance(configurable, dict) else "unknown"
 
 
+
+def ________():pass
 def _last_assistant_text(state: AgentState) -> str:
     """从 AgentState 中提取最后一条 assistant/AI 消息文本。
 
@@ -100,7 +101,6 @@ def _message_type_summary(state: AgentState) -> str:
     当记忆没有写回时，日志里只输出消息类型摘要，不输出完整消息内容。
     这样既方便排查“最后一条消息是不是 assistant”，又避免把用户代码或敏感信息写进日志。
     """
-
     messages = list(state.get("messages", []))
     tail = []
     for message in messages[-5:]:
@@ -109,16 +109,16 @@ def _message_type_summary(state: AgentState) -> str:
 
 
 class MemoryUpdateMiddleware(AgentMiddleware):
-    """在整轮 Agent 结束后把稳定结论追加到仓库记忆。
+    """在整轮 Agent 结束后把稳定结论--追加到仓库记忆。
 
     当前项目已经使用仓库维度的记忆文件：
     `/memories/{owner}/{repo}.md`。
 
     本中间件不直接拼接 Markdown，也不自己决定写入哪些章节；
     它只负责从 AgentState 中提取最终 assistant 文本，然后交给
-    `repo_memory_update.py` 做清洗、提炼、去重和结构化写回。
+    `repo_memory_update.py` 做清洗、提炼、去重和结构化写回。##===================================##===================================##===================================##===================================
 
-    注意：这是兜底写回。正常情况下 runtime.py 会在任务成功结束后主动更新记忆。
+    注意：这是兜底写回。正常情况下 runtime.py 会在任务成功结束后主动更新记忆。##===================================##===================================##===================================##===================================
     """
 
     state_schema = AgentState
@@ -126,30 +126,33 @@ class MemoryUpdateMiddleware(AgentMiddleware):
     def after_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
         # 1. 当前项目的记忆是“仓库级”的，所以必须先拿到 repo_url。
         #    如果没有 repo_url，就无法确定写入哪个 owner/repo 的 namespace。
-        repo_url = _repo_url_from_config()
+        repo_url = _repo_url_from_config()##===================================
         if not repo_url:
             logger.warning("MemoryUpdateMiddleware: get_config 中没有 repo_url，跳过记忆更新")
             return None
 
+
         # 2. 提取最后一条 assistant 消息。
-        #    这里不读取全部消息，避免把工具过程、测试日志和中间猜测写入长期记忆。
-        final_text = _last_assistant_text(state)
+        #    这里不读取全部消息，避免把工具过程、测试日志、和中间猜测 写入长期记忆。
+        final_text = _last_assistant_text(state)##===================================##===================================
         if not final_text or any(marker in mask_token(final_text).lower() for marker in SENSITIVE_MARKERS):
             # 3. 如果没有最终文本，或者最终文本疑似包含敏感信息，则跳过写回。
             #    这一步宁可少写，也不能把 token、私钥、.env 内容写入长期记忆。
             logger.info(
                 "MemoryUpdateMiddleware: 助手消息无可写入的稳定结论，跳过更新：%s",
-                _message_type_summary(state),
+                _message_type_summary(state),##===================================
             )
             return None
 
+
         # 4. 解析 Gitee 仓库地址，并委托 repo_memory_update.py 执行真正的记忆更新。
         #    parse_gitee_repo_url 会保证这里只处理 Gitee 仓库，符合当前项目范围。
-        repo = parse_gitee_repo_url(repo_url)
+        repo = parse_gitee_repo_url(repo_url)##===================================
         update_repo_memory_from_text(
-            store=get_langgraph_store(),
+            store=get_langgraph_store(),##见graph.py中的store 专门服务 `/memories/...` 长期记忆文件，内部表结构由
             repo=repo,
-            update=RepoMemoryUpdate(task_kind=_task_kind_from_config(), final_text=final_text),
+            update=RepoMemoryUpdate(task_kind=_task_kind_from_config(),
+                                    final_text=final_text),
         )
         return None
 

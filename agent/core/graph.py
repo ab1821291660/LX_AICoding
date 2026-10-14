@@ -13,16 +13,16 @@ _langgraph_store = None##- 专门服务 `/memories/...` 长期记忆文件 ##===
 def get_store() -> LocalSqliteStore:
     """获取业务 SQLite Store。
 
-    Store 保存的是平台业务数据，例如任务列表、仓库地址、PR URL、review findings。
+    Store保存的是平台业务数据，例如任务列表、仓库地址、PR URL、review findings。
     它和 LangGraph checkpoint 是两套数据：
     - Store 面向页面和业务查询。##===================================##===================================
     - Checkpoint 面向 Agent 的 thread state 和消息历史恢复。 负责保存 Agent 运行过程中的 messages、工具调用状态和 thread state。##===================================##===================================
     """
-
     global _store
     if _store is None:
         _store = LocalSqliteStore(STORE_DB_PATH)
     return _store
+def ________上面为__Store保存的是平台业务数据():pass
 
 
 def get_checkpointer():
@@ -51,6 +51,8 @@ def get_langgraph_store():
     if _langgraph_store is None:
         _langgraph_store = make_langgraph_store(LANGGRAPH_STORE_DB_PATH)##===================================
     return _langgraph_store
+
+
 
 
 def build_agent(thread_id: str, task_kind: TaskKind = "coding"):

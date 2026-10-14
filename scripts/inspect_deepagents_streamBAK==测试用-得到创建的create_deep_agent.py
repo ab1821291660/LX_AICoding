@@ -185,12 +185,16 @@ def main() -> None:
     parser.add_argument("--mode", choices=["raw", "interleave", "messages", "tool_calls", "all"], default="all")
     args = parser.parse_args()
 
+
+
     thread_id = f"inspect-stream-{uuid.uuid4()}"
     agent = build_agent(thread_id,##===================================
                         task_kind=args.task_kind)
     print("thread_id", thread_id)
     print("task_kind", args.task_kind)
     print("prompt", args.prompt)
+
+
 
     if args.mode in {"raw", "all"}:
         inspect_raw(agent, prompt=args.prompt, thread_id=thread_id, limit=args.limit)##===================================

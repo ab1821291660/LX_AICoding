@@ -19,10 +19,14 @@ DATA_DIR = Path(get_env("LX_AICODING_DATA_DIR", str(PROJECT_ROOT / "data"))).res
 CHECKPOINT_DB_PATH = Path(
     get_env("CHECKPOINT_DB_PATH", str(DATA_DIR / "checkpoints.sqlite"))##===================================
 ).resolve()
-STORE_DB_PATH = Path(get_env("STORE_DB_PATH", str(DATA_DIR / "store.sqlite"))).resolve()##===================================
 LANGGRAPH_STORE_DB_PATH = Path(
     get_env("LANGGRAPH_STORE_DB_PATH", str(DATA_DIR / "langgraph_store.sqlite"))##===================================
 ).resolve()
+##
+##Store保存的是平台业务数据，例如任务列表、仓库地址、PR URL、review findings。
+STORE_DB_PATH = Path(get_env("STORE_DB_PATH", str(DATA_DIR / "store.sqlite"))).resolve()##===================================
+
+
 
 # 日志目录：所有后端日志和 Agent 运行日志都写入项目内 logs/。
 # 这样既能在控制台实时看，也能在课后通过日志文件复盘 Agent 做了什么。

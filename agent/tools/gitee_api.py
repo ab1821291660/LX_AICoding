@@ -30,7 +30,7 @@ class GiteeRepo:
     repo: str
     clone_url: str
 
-
+def ________():pass
 def parse_gitee_repo_url(repo_url: str) -> GiteeRepo:
     """解析 Gitee 仓库 URL。
 
@@ -52,7 +52,7 @@ def parse_gitee_repo_url(repo_url: str) -> GiteeRepo:
     if len(parts) < 2:
         raise ValueError(f"无法解析 Gitee 仓库地址: {repo_url}")
     owner = parts[0]
-    # 统一去掉 `.git` 后缀，API 路径使用纯 repo 名，clone_url 再补回标准后缀。
+    # 统一去掉 `.git` 后缀， API 路径使用纯 repo 名， clone_url 再补回标准后缀。
     repo = re.sub(r"\.git$", "", parts[1])
     return GiteeRepo(owner=owner, repo=repo, clone_url=f"https://gitee.com/{owner}/{repo}.git")
 

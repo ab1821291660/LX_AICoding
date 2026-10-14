@@ -131,7 +131,7 @@ def _extract_final_assistant_text(messages: list[dict[str, Any]]) -> str:
         message_type = str(message.get("type") or "").lower()
         if message_type not in {"ai", "assistant"}:
             continue
-        text = _message_content_to_text(message.get("content"))
+        text = _message_content_to_text(message.get("content"))##===================================
         if text:
             return text
     return ""
@@ -153,7 +153,7 @@ def _extract_best_plan_text(messages: list[dict[str, Any]]) -> str:
         message_type = str(message.get("type") or "").lower()
         if message_type not in {"ai", "assistant"}:
             continue
-        text = _message_content_to_text(message.get("content"))
+        text = _message_content_to_text(message.get("content"))##===================================
         if text:
             candidates.append(text)
     if not candidates:
@@ -814,7 +814,7 @@ def run_plan_response_task(
         raise
 
 
-def run_agent_task(
+def run_agent_task(##===================================
     *,
     repo_url: str,
     prompt: str,
@@ -955,7 +955,7 @@ def run_agent_task(
         store.record_run(run_id=run_id, thread_id=thread_id, status="completed", finished=True)
         record_event(thread_id, "done", "任务完成", status="completed")
         messages = result.get("messages", [])
-        final_answer = _extract_final_assistant_text(messages)
+        final_answer = _extract_final_assistant_text(messages)##===================================
         if final_answer:
             # 仓库记忆只记录最终稳定结论，不记录所有中间 chunk。
             # branch/pr 信息来自 Store 中的最新业务状态，通常由 Gitee 工具在执行过程中写入。
