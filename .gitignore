@@ -1,4 +1,4 @@
-.env
+#.env
 logs/
 data/*.sqlite
 __pycache__/
