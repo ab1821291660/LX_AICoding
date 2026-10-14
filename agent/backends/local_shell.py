@@ -162,7 +162,6 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         else:
             configured_root = workspace or os.environ.get("LOCAL_SHELL_WORKSPACE") or str(WORKSPACE_ROOT)
             self.workspace = Workspace(Path(configured_root))##===================================##===================================
-
         self.root = Path(configured_root).expanduser().resolve()
         # 工作区子目录规划
         self.projects_dir = self.root / os.environ.get("LOCAL_SHELL_PROJECTS_DIR", "projects")
@@ -177,6 +176,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             "LOCAL_SHELL_SHARED_PYTHON_VENV",
             "runtimes/python/default/.venv",
         )
+
         self.default_timeout = timeout
         # 命令安全守卫，默认开启
         self.command_guard_enabled = (
@@ -184,7 +184,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             not in {"0", "false", "no"}
         )
         self._venv_error: str | None = None
-        self._ensure_layout()
+        self._ensure_layout()##===================================
 
     @property
     def id(self) -> str:
@@ -567,8 +567,10 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             stderr=_mask_token(completed.stderr),
         )
 
-    # ── 初始化相关 ───────────────────────────────────────────
 
+    def _______(self):
+        pass
+    # ── 初始化相关 ───────────────────────────────────────────
     def _ensure_layout(self) -> None:
         """创建工作区目录结构，写入 workspace 标记文件。
 
@@ -594,9 +596,9 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         ):
             directory.mkdir(parents=True, exist_ok=True)
         if os.environ.get("LOCAL_SHELL_CREATE_PYTHON_VENV", "false").lower() not in {"0", "false", "no"}:
-            self._ensure_shared_python_venv()
-        self._ensure_policy_files()
-        self._ensure_gitee_askpass_files()
+            self._ensure_shared_python_venv()##===================================
+        self._ensure_policy_files()##===================================
+        self._ensure_gitee_askpass_files()##===================================
         # 写一个 .ai_coding_workspace.json 标记文件，方便外部工具识别工作区
         state = {
             "backend": "local_shell",
@@ -716,8 +718,10 @@ class LocalShellBackend(BaseSandbox):##===================================##====
                 encoding="utf-8",
             )
 
-    # ── 路径处理 ─────────────────────────────────────────────
 
+    def ________(self):
+        pass
+    # ── 路径处理 ─────────────────────────────────────────────
     def _normalize_compat_path(self, path: str | os.PathLike[str]) -> str:
         """把旧工具传过来的路径统一成虚拟路径格式（/ 开头）。
 

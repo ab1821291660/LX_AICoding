@@ -58,7 +58,8 @@ def main() -> None:
     if "ai-coding-implementation" not in coding_prompt:
         raise AssertionError("系统提示词没有要求 coding 使用 ai-coding-implementation")
 
-    agent = build_agent("verify-repo-bootstrap-skill", task_kind="planning")
+
+    agent = build_agent("verify-repo-bootstrap-skill", task_kind="planning")##===================================
     if type(agent).__name__ != "CompiledStateGraph":
         raise AssertionError(f"build_agent 返回类型异常：{type(agent).__name__}")
 
