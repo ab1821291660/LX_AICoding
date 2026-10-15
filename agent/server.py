@@ -82,20 +82,19 @@ def graph_loaded_for_execution(config: RunnableConfig) -> bool:
     LX_AICODING 不使用 langgraph dev，但保留这个判断，可以让课程代码结构
     尽量贴近 之前项目，并避免没有 thread_id 时误创建完整工具链。
     """
-
     configurable = (config or {}).get("configurable") or {}
     return bool(configurable.get("__is_for_execution__", False))##===================================
 
 
 def _task_kind_from_config(configurable: dict[str, Any]) -> TaskKind:
     """从 config 中读取任务类型，非法值统一回退为 coding。"""
-    value = configurable.get("task_kind", "coding")
+    value = configurable.get("task_kind", "coding")##===================================
     if value in {"coding", "analysis", "planning", "qa", "sync", "inspect", "review"}:
         return value
     return "coding"
 
 
-
+def ____准备backend__混合CompositeBackend记忆():pass
 def ensure_backend_for_thread(thread_id: str) -> LocalShellBackend:
     """获取或创建绑定到 thread 的本地 backend。
 
@@ -105,7 +104,7 @@ def ensure_backend_for_thread(thread_id: str) -> LocalShellBackend:
     - 不接入 LangSmith metadata；
     - 只负责复用当前机器上的 `AI_WORKSPACE_ROOT` 工作区。
     """
-    backend = _BACKENDS.get(thread_id)
+    backend = _BACKENDS.get(thread_id)##===================================
     if backend is None:
         logger.info("为 thread 创建 LocalShellBackend：%s", thread_id)
         backend = LocalShellBackend()##===================================
@@ -407,26 +406,23 @@ def get_agent(config: RunnableConfig):
         # 甚至触发文件系统副作用。真实任务必须带 thread_id 且标记执行态。
         logger.info("没有 thread_id 或不是执行态，返回空 Agent")
         return create_deep_agent(system_prompt="", tools=[]).with_config(config)
-
-
     # task_kind 是系统提示词、权限策略和运行保护策略的共同输入。
     task_kind = _task_kind_from_config(configurable)##===================================
-
-
-    # backend 按 thread 复用，避免同一个会话内反复初始化 Windows 工作区封装。
-    backend = ensure_backend_for_thread(thread_id)##===================================
-
-
     repo_url = configurable.get("repo_url")##===================================
 
 
+
+
+    # backend 按 thread 复用，避免同一个会话内反复初始化 Windows 工作区封装。
+    backend = ensure_backend_for_thread(thread_id)##===================================##===================================##===================================
+    ##
     # server.py 在创建 Agent 之前，已经顺手读到了当前仓库记忆内容；
     # 那就把内容放进 config，后面的 ContextInjectionMiddleware 直接用，
     # 避免 middleware 再查一次 LangGraph Store。
     ##backend其它方法    ##memory_path = ##return f"/memories/{owner}/{repo}.md"    ##store的记忆内容
-    agent_backend,  memory_paths, repo_memory_content = _prepare_repo_backend_context(repo_url=repo_url, backend=backend)##===================================##===================================
+    agent_backend,  memory_paths, repo_memory_content = _prepare_repo_backend_context(repo_url=repo_url, backend=backend)##===================================##===================================##===================================
     if repo_memory_content:
-        configurable["_repo_memory_content"] = repo_memory_content
+        configurable["_repo_memory_content"] = repo_memory_content##===================================
     def backend_factory(_runtime: object, _thread_id: str = thread_id) -> Any:
         # DeepAgents 0.6.x 直接传入带命令执行能力的 backend 时，
         # 和 permissions 组合仍有兼容限制；
@@ -435,16 +431,16 @@ def get_agent(config: RunnableConfig):
         return agent_backend
 
 
+
+
     # 课程版暂时主 Agent 和子 Agent 共用 deepseek-v4-pro。
     # 后续如果要演示 之前项目 的 profile / fallback / team defaults，
     # 可以从这里拆出 main_model 和 subagent_model 的不同配置。
     # 这里每次创建 Agent 都重新创建 model wrapper，但模型调用状态不依赖该对象保存。
     main_model = make_main_model()##===================================
     subagent_model = make_main_model()##===================================
-
-
-    from agent.core.graph import get_checkpointer
-    langgraph_store = get_langgraph_store()#这里的store专门服务 `/memories/...` 长期记忆文件
+    from agent.core.graph import get_checkpointer##===================================
+    langgraph_store = get_langgraph_store()#这里的store专门服务 `/memories/...` 长期记忆文件##===================================
     logger.info("返回带 backend 的 Agent：thread_id=%s task_kind=%s", thread_id, task_kind)
     # 这里是整套 Agent 能力的装配点。讲课时建议从这些参数逐个展开：
     # model 决定推理能力；tools 提供业务动作；system_prompt 提供任务规则；
@@ -469,6 +465,10 @@ def get_agent(config: RunnableConfig):
             add_review_finding,
             list_review_findings,
         ],
+
+
+
+
         system_prompt=get_system_prompt(task_kind),
         subagents=[_general_purpose_subagent(subagent_model), ##===================================##===================================
                    _code_reviewer_subagent(subagent_model)], ##===================================##===================================
@@ -485,11 +485,14 @@ def get_agent(config: RunnableConfig):
         middleware=[
             ContextInjectionMiddleware(),##========
             MessageSanitizeMiddleware(),##========
+
             SanitizeToolInputsMiddleware(backend=backend),##========
-            create_summarization_tool_middleware(main_model, agent_backend),
-            ModelCallLimitMiddleware(run_limit=MODEL_CALL_RECURSION_LIMIT, exit_behavior="end"),
+            create_summarization_tool_middleware(main_model, agent_backend),##创建摘要
+            ModelCallLimitMiddleware(run_limit=MODEL_CALL_RECURSION_LIMIT, exit_behavior="end"),##限制模型-调用次数5000
             ToolErrorMiddleware(backend=backend),##========
+            # MemoryUpdateMiddleware(),##========
         ],
+
 
 
 
@@ -500,10 +503,7 @@ def get_agent(config: RunnableConfig):
         # memory 只声明 Agent 可以访问的长期记忆文件路径；
         # 具体读写会通过上面的 /memories/ StoreBackend 路由完成。
         memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"
-        # checkpointer 是聊天历史、工具消息和图状态的权威来源。
-        # 前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
-        checkpointer=get_checkpointer(),
-        # store 传给 DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
-        store=langgraph_store,
+        checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
+        store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
     ).with_config(config)
 

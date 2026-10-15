@@ -122,7 +122,7 @@ def _reject_tool_message(
 
     return ToolMessage(
         content=json.dumps(
-            _reject_result(error, tool_name=tool_name, backend=backend),
+            _reject_result(error, tool_name=tool_name, backend=backend),##===================================
             ensure_ascii=False,
         ),
         tool_call_id=_get_tool_call_id(request),
@@ -280,11 +280,11 @@ class SanitizeToolInputsMiddleware(AgentMiddleware):
 
         tool_name = str(request.tool_call.get("name") or "") if isinstance(request.tool_call, dict) else ""
         try:
-            return handler(self._sanitize_request(request))
+            return handler(self._sanitize_request(request))##===================================
         except ToolInputRejected as exc:
             logger.warning("工具入参被拒绝：tool=%s error=%s", tool_name, mask_token(str(exc)))
-            self._record_rejection(request, tool_name, exc)
-            return _reject_tool_message(exc, request=request, tool_name=tool_name, backend=self.backend)
+            self._record_rejection(request, tool_name, exc)##========
+            return _reject_tool_message(exc, request=request, tool_name=tool_name, backend=self.backend)##===================================
 
     async def awrap_tool_call(
         self,

@@ -25,12 +25,12 @@ class GiteeRepo:
     owner 和 repo 用于调用 Gitee API；clone_url 用于 Git clone/push 等本地命令。
     使用 frozen dataclass 可以避免解析后的仓库信息在调用链中被意外修改。
     """
-
     owner: str
     repo: str
     clone_url: str
 
-def ________():pass
+
+
 def parse_gitee_repo_url(repo_url: str) -> GiteeRepo:
     """解析 Gitee 仓库 URL。
 
@@ -54,7 +54,9 @@ def parse_gitee_repo_url(repo_url: str) -> GiteeRepo:
     owner = parts[0]
     # 统一去掉 `.git` 后缀， API 路径使用纯 repo 名， clone_url 再补回标准后缀。
     repo = re.sub(r"\.git$", "", parts[1])
-    return GiteeRepo(owner=owner, repo=repo, clone_url=f"https://gitee.com/{owner}/{repo}.git")
+    return GiteeRepo(owner=owner,
+                     repo=repo,
+                     clone_url=f"https://gitee.com/{owner}/{repo}.git")
 
 
 def normalize_gitee_repo_url(repo_url: str) -> str:
@@ -63,7 +65,6 @@ def normalize_gitee_repo_url(repo_url: str) -> str:
     这个函数只负责 URL 规范化，不再承担“仓库地址映射到本地目录”的职责。
     本地目录由 `repo_project_dir()` 固定推导为 `projects/<repo>`。
     """
-
     return parse_gitee_repo_url(repo_url).clone_url
 
 
@@ -129,6 +130,7 @@ def _existing_pr_from_error(text: str) -> dict | None:
     }
 
 
+def _______创建PullRequest():pass
 def create_pull_request(
     *,
     owner: str,
@@ -156,7 +158,7 @@ def create_pull_request(
     """
 
     api_base = get_env("GITEE_API_BASE_URL", "https://gitee.com/api/v5").rstrip("/")
-    token = get_gitee_token()
+    token = get_gitee_token()##===================================
     url = f"{api_base}/repos/{owner}/{repo}/pulls"
     # Gitee v5 API 使用 access_token 表单字段认证。
     # 该 payload 不写日志，调用异常向上抛出前也应在上层做 token 脱敏。
@@ -171,13 +173,15 @@ def create_pull_request(
         response = client.post(url, data=payload)
     if response.status_code >= 400:
         # 相同 head/base 的 PR 已存在时复用已有 PR，保证工具具备幂等语义。
-        existing = _existing_pr_from_error(response.text)
+        existing = _existing_pr_from_error(response.text)##===================================
         if existing is not None:
             return existing
         raise RuntimeError(f"Gitee 创建 PR 失败: {response.status_code} {response.text}")
     return response.json()
 
 
+
+def _______():pass
 def _gitee_get(path: str, *, params: dict | None = None) -> dict | list:
     """执行 Gitee GET 请求。
 
@@ -199,31 +203,34 @@ def _gitee_get(path: str, *, params: dict | None = None) -> dict | list:
 def get_pull_request(*, owner: str, repo: str, number: int) -> dict:
     """读取 Gitee Pull Request 详情。"""
 
-    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}")
+    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}")##===================================##===================================
     return data if isinstance(data, dict) else {"items": data}
 
 
 def list_pull_request_commits(*, owner: str, repo: str, number: int) -> list:
     """读取 Gitee Pull Request 的提交列表。"""
 
-    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/commits")
+    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/commits")##===================================
     return data if isinstance(data, list) else [data]
 
 
 def list_pull_request_files(*, owner: str, repo: str, number: int) -> list:
     """读取 Gitee Pull Request 的文件变更列表。"""
 
-    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/files")
+    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/files")##===================================
     return data if isinstance(data, list) else [data]
 
 
 def list_pull_request_comments(*, owner: str, repo: str, number: int) -> list:
     """读取 Gitee Pull Request 的普通评论列表。"""
 
-    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/comments")
+    data = _gitee_get(f"/repos/{owner}/{repo}/pulls/{number}/comments")##===================================
     return data if isinstance(data, list) else [data]
 
 
+
+
+def ______向PullRequest发布评论():pass
 def post_pr_comment(*, owner: str, repo: str, number: int, body: str) -> dict:
     """调用 Gitee API 向 Pull Request 发布评论。
 
@@ -248,3 +255,4 @@ def post_pr_comment(*, owner: str, repo: str, number: int, body: str) -> dict:
     if response.status_code >= 400:
         raise RuntimeError(f"Gitee 发布 PR 评论失败: {response.status_code} {response.text}")
     return response.json()
+

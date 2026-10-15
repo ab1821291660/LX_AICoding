@@ -16,11 +16,8 @@
 """
 
 from __future__ import annotations
-
 import re
 from pathlib import Path
-
-
 class WorkspacePermissionError(PermissionError):
     """工作区或命令权限错误。
 
@@ -29,6 +26,8 @@ class WorkspacePermissionError(PermissionError):
     - middleware 能识别这是可恢复的安全拒绝，而不是系统崩溃；
     - 错误语义比普通 `ValueError` 更明确。
     """
+
+
 
 
 def assert_path_inside(path: Path, root: Path) -> Path:
@@ -55,7 +54,7 @@ def assert_path_inside(path: Path, root: Path) -> Path:
     raise WorkspacePermissionError(f"Path is outside workspace: {resolved_path}")
 
 
-def normalize_safe_command(command: str) -> str:
+def normalize_safe_command(command: str) -> str:##===================================##===================================
     """校验 Agent 准备执行的本地命令。
 
     课程版第一版只允许少量教学需要的命令族：

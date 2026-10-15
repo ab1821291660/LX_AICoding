@@ -287,7 +287,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
                 encoding="utf-8",  # 使用 UTF-8 解码 stdout/stderr，保持日志和模型上下文编码一致
                 errors="replace",  # 遇到无法解码的字符时用替代字符处理，避免解码异常中断任务
                 timeout=effective_timeout,  # 单次命令执行超时时间，防止长时间阻塞 Agent 运行线程
-                env=self._execution_env(),  # 子进程环境变量，包含 PATH、虚拟环境、Git 非交互认证等配置
+                env=self._execution_env(),  # 子进程环境变量，包含 PATH、虚拟环境、Git 非交互认证等配置 ##===================================
                 check=False,  # 不因非 0 退出码抛异常，保留 exit_code 交给 Agent 判断后续处理
                 shell=True,  # 通过系统 shell 执行字符串命令，兼容内置命令和 Git 命令
                 **self._shell_kwargs(),
@@ -318,7 +318,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
     def ls(self, path: str) -> LsResult:
         """列出虚拟路径下的文件和目录。"""
         try:
-            resolved = self._resolve_virtual_path(path)
+            resolved = self._resolve_virtual_path(path)##===================================
             if not resolved.exists():
                 return LsResult(entries=None, error=f"路径不存在：{path}")
             if not resolved.is_dir():
@@ -326,7 +326,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             return LsResult(
                 entries=[
                     {
-                        "path": self._to_virtual_path(child),
+                        "path": self._to_virtual_path(child),##===================================
                         "is_dir": child.is_dir(),
                         "size": child.stat().st_size if child.is_file() else 0,
                         "modified_at": datetime.fromtimestamp(child.stat().st_mtime, UTC).isoformat(),
@@ -345,7 +345,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         避免因为一次编码异常中断整个 Agent 任务。
         """
         try:
-            resolved = self._resolve_virtual_path(file_path)
+            resolved = self._resolve_virtual_path(file_path)##===================================
             if not resolved.exists():
                 return ReadResult(error=f"文件不存在：{file_path}")
             if resolved.is_dir():
@@ -376,7 +376,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
     def write(self, file_path: str, content: str) -> WriteResult:
         """新建文件。如果文件已存在则报错（修改请用 edit）。"""
         try:
-            resolved = self._resolve_virtual_path(file_path)
+            resolved = self._resolve_virtual_path(file_path)##===================================
             denied = self._write_deny_reason(resolved)
             if denied:
                 return WriteResult(error=denied)
@@ -397,7 +397,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
     ) -> EditResult:
         """替换文件中的文本 —— 相当于精细化的 find & replace。"""
         try:
-            resolved = self._resolve_virtual_path(file_path)
+            resolved = self._resolve_virtual_path(file_path)##===================================
             if not resolved.exists():
                 return EditResult(error=f"文件不存在：{file_path}")
             if resolved.is_dir():
@@ -501,7 +501,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
     def read_file(self, path: str) -> str:
         """读取文本文件（兼容旧工具）。"""
-        result = self.read(self._normalize_compat_path(path), offset=0, limit=200_000)
+        result = self.read(self._normalize_compat_path(path), offset=0, limit=200_000)##===================================
         if result.error:
             if "目录" in result.error or "is_directory" in result.error:
                 raise IsADirectoryError(result.error)
@@ -510,9 +510,9 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
     def write_file(self, path: str, content: str) -> str:
         """写入文本文件（兼容旧工具，可新建也可覆盖）。"""
-        virtual_path = self._normalize_compat_path(path)
-        resolved = self._resolve_virtual_path(virtual_path)
-        denied = self._write_deny_reason(resolved)
+        virtual_path = self._normalize_compat_path(path)##===================================
+        resolved = self._resolve_virtual_path(virtual_path)##===================================
+        denied = self._write_deny_reason(resolved)##===================================
         if denied:
             raise PermissionError(denied)
         if resolved.exists() and resolved.is_dir():
@@ -523,8 +523,8 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
     def list_files(self, path: str = ".") -> list[str]:
         """列出目录下一层内容（兼容旧工具，返回相对路径）。"""
-        virtual_path = self._normalize_compat_path(path)
-        resolved = self._resolve_virtual_path(virtual_path)
+        virtual_path = self._normalize_compat_path(path)##===================================
+        resolved = self._resolve_virtual_path(virtual_path)##===================================
         if not resolved.exists():
             return []
         if resolved.is_file():
@@ -541,7 +541,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
         这是一层迁移适配，不建议新工具继续绕过 DeepAgents 原生协议调用它。
         """
-        cwd_path, command_text = self._prepare_run_command(command, cwd)
+        cwd_path, command_text = self._prepare_run_command(command, cwd)##===================================
         logger.info("执行命令：cwd=%s command=%s timeout=%s", cwd_path, _mask_token(command_text), timeout)
         completed = subprocess.run(
             command_text,
@@ -723,7 +723,184 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             )
 
 
-    def ________(self):
+    def ________execute下的(self):
+        pass
+    def _is_writable(self, path: Path) -> bool:
+        """测写入权限：尝试写一个临时文件，成功就表示可写。"""
+        try:
+            probe = path / ".write_test"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+            return True
+        except OSError:
+            return False
+
+    def _deny_reason(self, command: str) -> str | None:
+        """安全守卫：检测命令是否越界或使用了危险操作。
+
+        这里是 `normalize_safe_command()` 之前的第一层粗粒度拒绝：
+        - 拦截 `..` 路径穿越；
+        - 拦截明显危险的系统命令；
+        - 拦截指向工作区外的 Windows 绝对路径。
+
+        两层校验的分工是：本函数做场景级拒绝，`normalize_safe_command()` 做命令白名单和语法收敛。
+        """
+        lowered = command.lower()
+        if _NESTED_PROJECTS_PATH_RE.search(command.replace("\\", "/")):
+            return "nested projects path is denied; use /projects/<repo> for file tools or <repo> in execute commands"
+        if "../" in command or "..\\" in command:
+            return "path traversal outside workspace is denied"
+        if not IS_WINDOWS and _LINUX_SENSITIVE_PATH_RE.search(command):##===================================
+            return "absolute Linux system path is denied"
+        for pattern in _DANGEROUS_PATTERNS:##===================================
+            if re.search(pattern, lowered):
+                return f"dangerous command pattern matched: {pattern}"
+        for match in _DRIVE_PATH_RE.finditer(command):##===================================
+            candidate = Path(match.group(1)).resolve()
+            if not self._is_under_root(candidate):##===================================##===================================
+                return f"absolute path outside workspace: {candidate}"
+        return None
+
+
+    # ── 命令预处理 ───────────────────────────────────────────
+    def _prepare_command(self, command: str, *, cwd_path: Path | None = None) -> str:
+        """执行前的命令预处理：适配当前系统、替换虚拟路径。
+
+        LLM 常按 Linux/Unix 习惯生成命令，例如 `python3`、`pwd`、`test -d`。
+        Windows 本地开发时，本方法会把这些常见表达转换成 Windows 可执行形式；##===================================
+        Linux 部署时，这些命令通常可以原样执行。##===================================
+        同时把 `/projects/...` 这样的虚拟路径替换为带引号的真实路径。##===================================##===================================
+        """
+        if cwd_path is not None and cwd_path.resolve() == self.projects_dir.resolve():
+            command = self._normalize_command_for_projects_cwd(command)##===================================
+        prepared = command.replace("python3 ", "python ") if IS_WINDOWS else command
+        prepared = _VIRTUAL_PATH_RE.sub(self._virtual_command_path_replacement, prepared)##===================================
+        # 兼容 Unix 常用命令
+        if IS_WINDOWS and prepared.strip() == "pwd":
+            return "cd"
+        if IS_WINDOWS and prepared.startswith('printf %s "$HOME"'):
+            return "echo %USERPROFILE%"
+        if IS_WINDOWS and prepared.startswith("test -d "):
+            return "echo ok"
+        return self._prepare_git_command(prepared)##===================================
+    def _normalize_command_for_projects_cwd(self, command: str) -> str:
+        """修正默认在 /projects 目录执行时容易产生的重复相对路径。
+
+        DeepAgents 原生 execute 没有 cwd 参数，本项目会把命令默认放在
+        `/projects` 对应的真实 projects 目录下执行。此时如果命令中再写
+        projects/<repo>，实际访问路径会变成 projects/projects/<repo>。
+        这里把相对的 projects/<repo> 收敛成 <repo>，把单独的 projects 收敛成 .。##===================================
+        以 /projects 开头的虚拟路径不受影响，后续仍会映射到真实工作区目录。
+        """
+
+        normalized = _RELATIVE_PROJECTS_PATH_RE.sub("", command)##===================================
+        normalized = _RELATIVE_PROJECTS_DIR_RE.sub(".", normalized)##===================================
+        if normalized != command:
+            logger.info(
+                "已修正 projects 工作目录下的重复相对路径：%s -> %s",
+                _mask_token(command),
+                _mask_token(normalized),
+            )
+        return normalized
+    def _virtual_command_path_replacement(self, match: re.Match[str]) -> str:
+        """把命令中的 `/projects/xxx` 等虚拟路径替换为真实路径（带引号防空格）。
+
+        这个函数只用于命令文本中的路径替换；文件工具的路径解析走 `_resolve_virtual_path()`。
+        两者都必须确认最终路径仍在工作区内，避免模型通过构造路径逃逸。
+        """
+        roots = {
+            "projects": self.projects_dir,
+            "skills": self.skills_dir,
+            "policies": self.policies_dir,
+            "reviews": self.reviews_dir,
+            "runtimes": self.runtimes_dir,
+            "tmp": self.tmp_dir,
+            "logs": self.logs_dir,
+        }
+        root = roots[match.group(1)]
+        suffix = (match.group(2) or "").lstrip("/")
+        path = (root / Path(*suffix.split("/"))).resolve() if suffix else root
+        if not self._is_under_root(path):
+            raise PermissionError(f"virtual path escapes workspace: {match.group(0)}")
+        return f'"{path}"'
+    def _prepare_git_command(self, command: str) -> str:
+        """给 git 命令注入 askpass 配置，避免弹窗或使用过期的凭据管理器。
+
+        通过 `git -c credential.helper= -c core.askPass=...` 临时覆盖 Git 配置，
+        可以让单次命令稳定使用当前 Agent 后端注入的 Gitee token。
+        这样不会污染用户全局 Git 配置，也不会依赖桌面凭据管理器。
+        """
+        stripped = command.lstrip()
+        leading = command[: len(command) - len(stripped)]
+        if stripped == "git":
+            rest = ""
+        elif stripped.lower().startswith("git "):
+            rest = stripped[4:]
+        else:
+            return command
+        askpass = str(self._git_askpass_path())
+        return f'{leading}git -c credential.helper= -c core.askPass="{askpass}" {rest}'.rstrip()
+
+
+
+    def _execution_env(self) -> dict[str, str]:
+        """构造子进程环境变量：注入 venv、Git 安全配置、Gitee 认证信息。
+
+        命令执行环境是企业项目里很容易失控的地方，所以这里统一集中处理：
+        - 如果共享 Python venv 存在，优先放到 PATH 前面；
+        - 禁用 Git 交互式弹窗，后台任务失败也要以文本形式返回；
+        - 如果配置了 Gitee token，通过 `GIT_ASKPASS` 注入，不拼进命令字符串。
+        """
+        env = os.environ.copy()
+        scripts = self._venv_bin_dir()##===================================
+        if scripts.exists():
+            env["PATH"] = f"{scripts}{os.pathsep}{env.get('PATH', '')}"
+            env["VIRTUAL_ENV"] = str(self.shared_python_venv)##===================================
+
+
+        # 禁止 Git 交互式弹窗，出错直接返回
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        env["GCM_INTERACTIVE"] = "Never"
+        gitee_token = get_env("GITEE_TOKEN").strip() or get_env("SCM_GITEE_TOKEN").strip()
+        if gitee_token:
+            env["GIT_ASKPASS"] = str(self._git_askpass_path())##===================================
+            env["GITEE_ASKPASS_USERNAME"] = "oauth2"
+            env["GITEE_ASKPASS_TOKEN"] = gitee_token
+        return env
+
+
+
+    def ________run下的(self):
+        pass
+    def _prepare_run_command(self, command: str, cwd: str) -> tuple[Path, str]:
+        """准备 `run()` 的命令：解析 cwd、兼容 `cd`、安全检查、规范化。
+
+        旧工具常把命令写成 `cd repo && git status`。
+        这里不会直接把整段 shell 原样执行，而是提取 `cd` 后的目录作为 subprocess 的 cwd，
+        再对后半段命令做安全检查和白名单归一化。
+        """
+        cwd_path = self._resolve_virtual_path(self._normalize_compat_path(cwd))
+        command = re.sub(r"\s+2>&1(?=\s*(?:&&|\|\||$))", "", command.strip())
+        first_part = command.split("&&", 1)[0].strip()
+        cd_match = re.fullmatch(r"cd\s+(.+)", first_part, flags=re.IGNORECASE)
+        if cd_match:
+            # 兼容 `cd xxx && command`，但不把 `cd` 作为真正的 shell 片段执行。
+            # 这样可以减少 shell 拼接能力，同时保留旧工具的使用习惯。
+            cwd_path = self._resolve_virtual_path(self._normalize_compat_path(cd_match.group(1).strip().strip('"').strip("'")))
+            command = command.split("&&", 1)[1].strip() if "&&" in command else ""
+        if not command:
+            raise ValueError("Command cannot be empty")
+        if self.command_guard_enabled:
+            denied = self._deny_reason(command)
+            if denied:
+                raise PermissionError(f"命令被拒绝：{denied}")
+        # 第二层安全校验：命令白名单、危险 shell 操作符和危险片段收敛。
+        safe_command = normalize_safe_command(command)##===================================##===================================见permissions.py
+        return cwd_path, self._prepare_command(safe_command, cwd_path=cwd_path)##===================================
+
+
+
+    def ________路径(self):
         pass
     # ── 路径处理 ─────────────────────────────────────────────
     def _normalize_compat_path(self, path: str | os.PathLike[str]) -> str:
@@ -770,7 +947,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
                     normalized = normalized[1:]
                 resolved = (self.root / normalized).resolve()
         # 安全检查：必须落在工作区范围内
-        if not self._is_under_root(resolved):
+        if not self._is_under_root(resolved):##===================================
             raise PermissionError(f"path outside local workspace is denied: {path}")
         return resolved
 
@@ -781,7 +958,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         返回虚拟路径可以降低环境耦合，也能避免把本机目录结构暴露给模型上下文。
         """
         resolved = path.resolve()
-        if not self._is_under_root(resolved):
+        if not self._is_under_root(resolved):##===================================
             raise PermissionError(f"path outside local workspace is denied: {path}")
         rel = resolved.relative_to(self.root).as_posix()
         return "/" + rel if rel else "/"
@@ -802,8 +979,9 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         except ValueError:
             return False
 
+    def ________安全控制(self):
+        pass
     # ── 安全控制 ─────────────────────────────────────────────
-
     def _write_deny_reason(self, path: Path) -> str | None:
         """检查目录是否禁止写入。
 
@@ -823,175 +1001,6 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             return "write denied: secrets are protected"
         return None
 
-    def _is_writable(self, path: Path) -> bool:
-        """测写入权限：尝试写一个临时文件，成功就表示可写。"""
-        try:
-            probe = path / ".write_test"
-            probe.write_text("ok", encoding="utf-8")
-            probe.unlink(missing_ok=True)
-            return True
-        except OSError:
-            return False
-
-    def _deny_reason(self, command: str) -> str | None:
-        """安全守卫：检测命令是否越界或使用了危险操作。
-
-        这里是 `normalize_safe_command()` 之前的第一层粗粒度拒绝：
-        - 拦截 `..` 路径穿越；
-        - 拦截明显危险的系统命令；
-        - 拦截指向工作区外的 Windows 绝对路径。
-
-        两层校验的分工是：本函数做场景级拒绝，`normalize_safe_command()` 做命令白名单和语法收敛。
-        """
-        lowered = command.lower()
-        if _NESTED_PROJECTS_PATH_RE.search(command.replace("\\", "/")):
-            return "nested projects path is denied; use /projects/<repo> for file tools or <repo> in execute commands"
-        if "../" in command or "..\\" in command:
-            return "path traversal outside workspace is denied"
-        if not IS_WINDOWS and _LINUX_SENSITIVE_PATH_RE.search(command):##===================================
-            return "absolute Linux system path is denied"
-        for pattern in _DANGEROUS_PATTERNS:##===================================
-            if re.search(pattern, lowered):
-                return f"dangerous command pattern matched: {pattern}"
-        for match in _DRIVE_PATH_RE.finditer(command):##===================================
-            candidate = Path(match.group(1)).resolve()
-            if not self._is_under_root(candidate):##===================================##===================================
-                return f"absolute path outside workspace: {candidate}"
-        return None
-
-    # ── 命令预处理 ───────────────────────────────────────────
-
-    def _prepare_command(self, command: str, *, cwd_path: Path | None = None) -> str:
-        """执行前的命令预处理：适配当前系统、替换虚拟路径。
-
-        LLM 常按 Linux/Unix 习惯生成命令，例如 `python3`、`pwd`、`test -d`。
-        Windows 本地开发时，本方法会把这些常见表达转换成 Windows 可执行形式；##===================================
-        Linux 部署时，这些命令通常可以原样执行。##===================================
-        同时把 `/projects/...` 这样的虚拟路径替换为带引号的真实路径。##===================================##===================================
-        """
-        if cwd_path is not None and cwd_path.resolve() == self.projects_dir.resolve():
-            command = self._normalize_command_for_projects_cwd(command)##===================================
-        prepared = command.replace("python3 ", "python ") if IS_WINDOWS else command
-        prepared = _VIRTUAL_PATH_RE.sub(self._virtual_command_path_replacement, prepared)##===================================
-        # 兼容 Unix 常用命令
-        if IS_WINDOWS and prepared.strip() == "pwd":
-            return "cd"
-        if IS_WINDOWS and prepared.startswith('printf %s "$HOME"'):
-            return "echo %USERPROFILE%"
-        if IS_WINDOWS and prepared.startswith("test -d "):
-            return "echo ok"
-        return self._prepare_git_command(prepared)
-    def _normalize_command_for_projects_cwd(self, command: str) -> str:
-        """修正默认在 /projects 目录执行时容易产生的重复相对路径。
-
-        DeepAgents 原生 execute 没有 cwd 参数，本项目会把命令默认放在
-        `/projects` 对应的真实 projects 目录下执行。此时如果命令中再写
-        projects/<repo>，实际访问路径会变成 projects/projects/<repo>。
-        这里把相对的 projects/<repo> 收敛成 <repo>，把单独的 projects 收敛成 .。##===================================
-        以 /projects 开头的虚拟路径不受影响，后续仍会映射到真实工作区目录。
-        """
-
-        normalized = _RELATIVE_PROJECTS_PATH_RE.sub("", command)##===================================
-        normalized = _RELATIVE_PROJECTS_DIR_RE.sub(".", normalized)##===================================
-        if normalized != command:
-            logger.info(
-                "已修正 projects 工作目录下的重复相对路径：%s -> %s",
-                _mask_token(command),
-                _mask_token(normalized),
-            )
-        return normalized
-
-
-    def _prepare_git_command(self, command: str) -> str:
-        """给 git 命令注入 askpass 配置，避免弹窗或使用过期的凭据管理器。
-
-        通过 `git -c credential.helper= -c core.askPass=...` 临时覆盖 Git 配置，
-        可以让单次命令稳定使用当前 Agent 后端注入的 Gitee token。
-        这样不会污染用户全局 Git 配置，也不会依赖桌面凭据管理器。
-        """
-        stripped = command.lstrip()
-        leading = command[: len(command) - len(stripped)]
-        if stripped == "git":
-            rest = ""
-        elif stripped.lower().startswith("git "):
-            rest = stripped[4:]
-        else:
-            return command
-        askpass = str(self._git_askpass_path())
-        return f'{leading}git -c credential.helper= -c core.askPass="{askpass}" {rest}'.rstrip()
-
-    def _prepare_run_command(self, command: str, cwd: str) -> tuple[Path, str]:
-        """准备 `run()` 的命令：解析 cwd、兼容 `cd`、安全检查、规范化。
-
-        旧工具常把命令写成 `cd repo && git status`。
-        这里不会直接把整段 shell 原样执行，而是提取 `cd` 后的目录作为 subprocess 的 cwd，
-        再对后半段命令做安全检查和白名单归一化。
-        """
-        cwd_path = self._resolve_virtual_path(self._normalize_compat_path(cwd))
-        command = re.sub(r"\s+2>&1(?=\s*(?:&&|\|\||$))", "", command.strip())
-        first_part = command.split("&&", 1)[0].strip()
-        cd_match = re.fullmatch(r"cd\s+(.+)", first_part, flags=re.IGNORECASE)
-        if cd_match:
-            # 兼容 `cd xxx && command`，但不把 `cd` 作为真正的 shell 片段执行。
-            # 这样可以减少 shell 拼接能力，同时保留旧工具的使用习惯。
-            cwd_path = self._resolve_virtual_path(self._normalize_compat_path(cd_match.group(1).strip().strip('"').strip("'")))
-            command = command.split("&&", 1)[1].strip() if "&&" in command else ""
-        if not command:
-            raise ValueError("Command cannot be empty")
-        if self.command_guard_enabled:
-            denied = self._deny_reason(command)
-            if denied:
-                raise PermissionError(f"命令被拒绝：{denied}")
-        # 第二层安全校验：命令白名单、危险 shell 操作符和危险片段收敛。
-        safe_command = normalize_safe_command(command)##===================================##===================================
-        return cwd_path, self._prepare_command(safe_command, cwd_path=cwd_path)
-
-    def _virtual_command_path_replacement(self, match: re.Match[str]) -> str:
-        """把命令中的 `/projects/xxx` 等虚拟路径替换为真实路径（带引号防空格）。
-
-        这个函数只用于命令文本中的路径替换；文件工具的路径解析走 `_resolve_virtual_path()`。
-        两者都必须确认最终路径仍在工作区内，避免模型通过构造路径逃逸。
-        """
-        roots = {
-            "projects": self.projects_dir,
-            "skills": self.skills_dir,
-            "policies": self.policies_dir,
-            "reviews": self.reviews_dir,
-            "runtimes": self.runtimes_dir,
-            "tmp": self.tmp_dir,
-            "logs": self.logs_dir,
-        }
-        root = roots[match.group(1)]
-        suffix = (match.group(2) or "").lstrip("/")
-        path = (root / Path(*suffix.split("/"))).resolve() if suffix else root
-        if not self._is_under_root(path):
-            raise PermissionError(f"virtual path escapes workspace: {match.group(0)}")
-        return f'"{path}"'
-
-    def _execution_env(self) -> dict[str, str]:
-        """构造子进程环境变量：注入 venv、Git 安全配置、Gitee 认证信息。
-
-        命令执行环境是企业项目里很容易失控的地方，所以这里统一集中处理：
-        - 如果共享 Python venv 存在，优先放到 PATH 前面；
-        - 禁用 Git 交互式弹窗，后台任务失败也要以文本形式返回；
-        - 如果配置了 Gitee token，通过 `GIT_ASKPASS` 注入，不拼进命令字符串。
-        """
-        env = os.environ.copy()
-        scripts = self._venv_bin_dir()##===================================
-        if scripts.exists():
-            env["PATH"] = f"{scripts}{os.pathsep}{env.get('PATH', '')}"
-            env["VIRTUAL_ENV"] = str(self.shared_python_venv)##===================================
-
-
-        # 禁止 Git 交互式弹窗，出错直接返回
-        env["GIT_TERMINAL_PROMPT"] = "0"
-        env["GCM_INTERACTIVE"] = "Never"
-        gitee_token = get_env("GITEE_TOKEN").strip() or get_env("SCM_GITEE_TOKEN").strip()
-        if gitee_token:
-            env["GIT_ASKPASS"] = str(self._git_askpass_path())##===================================
-            env["GITEE_ASKPASS_USERNAME"] = "oauth2"
-            env["GITEE_ASKPASS_TOKEN"] = gitee_token
-        return env
 
 
 

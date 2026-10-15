@@ -23,9 +23,9 @@ from typing import Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, field_validator
 
-from agent.core.model import make_intent_model##===================================
+from agent.core.model import make_intent_model##===================================##===================================
 
-TaskKind = Literal["coding", "analysis", "planning", "qa", "sync", "inspect", "review"]
+TaskKind = Literal["coding", "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
 
 logger = logging.getLogger("agent.run.task_intent")
 
@@ -117,7 +117,7 @@ def _make_structured_intent_model():
     如果未来模型支持更严格的原生 JSON Schema，可以把 method 调整为 `json_schema`。
     """
 
-    return make_intent_model().with_structured_output(IntentClassification, method="json_mode")
+    return make_intent_model().with_structured_output(IntentClassification, method="json_mode")##===================================##===================================
 
 
 def _classify_by_keyword_backup(prompt: str) -> TaskKind:
