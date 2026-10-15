@@ -43,8 +43,8 @@ def get_langgraph_store():
 
     业务数据仍然写入 `store.sqlite`，
     checkpoint 仍然写入 `checkpoints.sqlite`。
-    这里的 store 专门服务 `/memories/...` 长期记忆文件，内部表结构由 ##===================================##===================================
-    LangGraph Store 自己创建和维护。
+    这里的store专门服务 `/memories/...` 长期记忆文件##===================================##===================================
+    ，内部表结构由LangGraph Store 自己创建和维护。
     """
 
     global _langgraph_store
@@ -54,7 +54,7 @@ def get_langgraph_store():
 
 
 
-
+def ________server_get_agent仅为scripts验证时用到__正常走runtime的get_agent():pass
 def build_agent(thread_id: str, task_kind: TaskKind = "coding"):
     """构建一个绑定 thread_id 的 DeepAgent 兼容入口。
 
@@ -72,3 +72,4 @@ def build_agent(thread_id: str, task_kind: TaskKind = "coding"):
             }
         }
     )
+

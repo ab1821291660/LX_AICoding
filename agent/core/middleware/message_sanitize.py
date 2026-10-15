@@ -364,7 +364,6 @@ class MessageSanitizeMiddleware(AgentMiddleware):
                 len(cleaned_state_messages),
             )
         return request.override(messages=cleaned_messages, state=state)
-
     def wrap_model_call(
         self,
         request: ModelRequest[Any],
@@ -372,7 +371,8 @@ class MessageSanitizeMiddleware(AgentMiddleware):
     ) -> ModelResponse[Any]:
         """同步模型调用链路的清洗入口。"""
 
-        return handler(self._clean_request(request))
+        return handler(self._clean_request(request))##===================================
+
 
     async def awrap_model_call(
         self,

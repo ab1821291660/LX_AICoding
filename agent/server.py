@@ -16,7 +16,7 @@ from typing import Any
 
 from deepagents import FilesystemPermission, create_deep_agent
 from deepagents.backends import CompositeBackend, StoreBackend
-from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent
+from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent##===================================
 from deepagents.middleware.summarization import create_summarization_tool_middleware
 from langchain.agents.middleware import ModelCallLimitMiddleware
 from langchain_core.language_models import BaseChatModel
@@ -70,7 +70,9 @@ MODEL_CALL_RECURSION_LIMIT = 5000
 # 课程版只保留本地 workspace，不接入 之前项目 的远程 sandbox。
 # 这里仍然按照 之前项目 的方式按 thread 缓存 backend，方便同一轮/同一会话复用
 # 工作区上下文，也方便后续讲解“thread -> backend -> Agent”的生命周期。
-_BACKENDS: dict[str, LocalShellBackend] = {}
+_BACKENDS: dict[str, LocalShellBackend] = {}##===================================##===================================
+
+
 
 
 def graph_loaded_for_execution(config: RunnableConfig) -> bool:
@@ -82,39 +84,124 @@ def graph_loaded_for_execution(config: RunnableConfig) -> bool:
     """
 
     configurable = (config or {}).get("configurable") or {}
-    return bool(configurable.get("__is_for_execution__", False))
+    return bool(configurable.get("__is_for_execution__", False))##===================================
+
+
+def _task_kind_from_config(configurable: dict[str, Any]) -> TaskKind:
+    """从 config 中读取任务类型，非法值统一回退为 coding。"""
+    value = configurable.get("task_kind", "coding")
+    if value in {"coding", "analysis", "planning", "qa", "sync", "inspect", "review"}:
+        return value
+    return "coding"
+
 
 
 def ensure_backend_for_thread(thread_id: str) -> LocalShellBackend:
     """获取或创建绑定到 thread 的本地 backend。
 
-    这个函数对应 之前项目 的 `ensure_sandbox_for_thread`，但做了功能减法：
+    这个函数对应 之前项目的 `ensure_sandbox_for_thread`，但做了功能减法：
     - 不创建远程 sandbox；
     - 不处理 GitHub proxy；
     - 不接入 LangSmith metadata；
     - 只负责复用当前机器上的 `AI_WORKSPACE_ROOT` 工作区。
     """
-
     backend = _BACKENDS.get(thread_id)
     if backend is None:
         logger.info("为 thread 创建 LocalShellBackend：%s", thread_id)
-        backend = LocalShellBackend()
+        backend = LocalShellBackend()##===================================
         _BACKENDS[thread_id] = backend
     else:
         logger.info("复用 thread 的 LocalShellBackend：%s", thread_id)
     return backend
 
 
-def _general_purpose_subagent(model: BaseChatModel) -> SubAgent:
-    """构建 之前项目 风格的通用分析子 Agent。
+def _prepare_repo_backend_context(
+    *,
+    repo_url: Any,
+    backend: LocalShellBackend,
+) -> tuple[Any, list[str] | None, str | None]:
+    """为指定Gitee仓库准备  repo级  backend和长期记忆。
 
-    子 Agent 只负责阅读、分析、总结和给主 Agent 提供建议。它不能直接修改
-    `/projects` 下的源码，也不能改 `/skills`、`/policies`、`/runtimes`。
+    `LocalShellBackend` 负责真实的 Windows 文件和命令执行；
+    如果任务绑定了Gitee 仓库，这里再把 `/memories/` 路径挂到 DeepAgents `StoreBackend` 上。同时读取记忆文件内容返回，避免后续 middleware 重复查询数据库。
+    返回: (CompositeBackend, [memory_virtual_path], memory_content_str | None)
+    """
+    if not isinstance(repo_url, str) or not repo_url.strip():
+        # 没有仓库地址时，只能使用普通本地 backend；例如纯问答、或测试入口探测。
+        return backend, None, None
+
+
+    # 仓库地址是仓库记忆命名空间的唯一来源，格式必须能解析为 owner/repo。
+    repo = parse_gitee_repo_url(repo_url)
+    project_dir = repo_project_dir(repo)
+    langgraph_store = get_langgraph_store()
+    # 初始化只在记忆不存在时写入模板；已有记忆不会被覆盖。
+    ensure_repo_memory_initialized(##===================================
+        store=langgraph_store,
+        repo=repo,
+        project_dir=project_dir,
+    )
+    # 顺带读一次记忆内容，传给 ContextInjectionMiddleware 避免重复查询
+    memory_content: str | None = None
+    memory_item = langgraph_store.get(##===================================
+        build_repo_memory_namespace(repo.owner, repo.repo),
+        repo_memory_store_key(repo.owner, repo.repo),
+    )
+    if memory_item is not None:
+        content = str(memory_item.value.get("content") or "").strip()
+        if content:
+            memory_content = content
+
+
+    return (
+        create_repo_backend(
+            local_backend=backend,
+            store=langgraph_store,
+            owner=repo.owner,
+            repo=repo.repo,
+        ),
+        [repo_memory_virtual_path(repo.owner, repo.repo)],##memory_path = ##return f"/memories/{owner}/{repo}.md"##===================================
+        memory_content,
+    )
+def create_repo_backend(
+    *,
+    local_backend: LocalShellBackend,
+    store: BaseStore,
+    owner: str,
+    repo: str,
+) -> CompositeBackend:
+    """创建当前仓库专用的 CompositeBackend。
+    - `/projects`、`/skills`、`/runtimes` 和 `execute()` 继续走 LocalShellBackend。##===================================
+    - `/memories/`走DeepAgents原生StoreBackend，底层由LangGraph Store持久化。##===================================##===================================##===================================
+    """
+    # 返回CompositeBackend后，Agent内部读/memories/... 会走StoreBackend，##===================================##===================================##===================================
+    # 读 /projects/...、执行命令和读取 skills 仍然走 LocalShellBackend。##===================================##===================================##===================================
+    namespace = build_repo_memory_namespace(owner, repo)# ("lx-aicoding", "repo-memory", owner.lower(), repo.lower())
+    return CompositeBackend(
+        default=local_backend,# default backend 覆盖绝大多数路径和命令执行能力。
+        routes={
+            # /memories/是虚拟路径，
+            # 不对应Windows真实目录。
+            # DeepAgents原生memory=[...] 会通过这里落到LangGraph Store。
+            "/memories/":
+                            StoreBackend(
+                                    store=store,
+                                    namespace=lambda _rt, _namespace=namespace: _namespace,
+                            )
+        },
+    )
+
+
+def ________2个子agent():pass
+def _general_purpose_subagent(model: BaseChatModel) -> SubAgent:
+    """构建之前项目风格的----通用分析子 Agent。
+
+    子 Agent 只负责阅读、分析、总结和给主 Agent 提供建议。
+    它不能直接修改`/projects` 下的源码，也不能改 `/skills`、`/policies`、`/runtimes`。
     这样可以让主 Agent 保持最终执行权，降低子 Agent 误改代码的风险。
     """
-
     return {
-        "name": GENERAL_PURPOSE_SUBAGENT["name"],
+        "name": GENERAL_PURPOSE_SUBAGENT["name"],##from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent
         "description": GENERAL_PURPOSE_SUBAGENT["description"],
         "system_prompt": GENERAL_PURPOSE_SUBAGENT["system_prompt"],
         "model": model,
@@ -135,10 +222,12 @@ def _general_purpose_subagent(model: BaseChatModel) -> SubAgent:
                 mode="allow",
             ),
             FilesystemPermission(
-                operations=["write"],
-                paths=["/reviews/**", "/tmp/**"],
+                operations=["write"],##===================================
+                paths=["/reviews/**", "/tmp/**"],##===================================
                 mode="allow",
             ),
+
+
             FilesystemPermission(
                 operations=["write"],
                 paths=[
@@ -160,13 +249,12 @@ def _general_purpose_subagent(model: BaseChatModel) -> SubAgent:
 
 
 def _code_reviewer_subagent(model: BaseChatModel) -> SubAgent:
-    """构建只读代码审查子 Agent。
+    """构建只读代码审查子 Agent。##===================================##===================================
 
     Reviewer 子 Agent 的职责是读取规则、读取 Gitee PR 上下文、分析 diff、
     记录结构化 finding，并输出中文审查报告。第一版不允许它修改 `/projects`
     中的源码，也不允许提交、push 或创建 PR，避免“审查”和“修复”职责混在一起。
     """
-
     return {
         "name": "code_reviewer",
         "description": (
@@ -212,10 +300,12 @@ def _code_reviewer_subagent(model: BaseChatModel) -> SubAgent:
                 mode="allow",
             ),
             FilesystemPermission(
-                operations=["write"],
-                paths=["/reviews/**", "/tmp/**"],
+                operations=["write"],##===================================
+                paths=["/reviews/**", "/tmp/**"],##===================================
                 mode="allow",
             ),
+
+
             FilesystemPermission(
                 operations=["write"],
                 paths=["/projects/**", "/skills/**", "/policies/**", "/memories/**"],
@@ -230,34 +320,36 @@ def _code_reviewer_subagent(model: BaseChatModel) -> SubAgent:
     }
 
 
+def ________():pass
 def _agent_filesystem_permissions() -> list[FilesystemPermission]:
     """主 Agent 的文件系统权限。
 
     主 Agent 可以修改 `/projects` 中的 Gitee 项目，也可以写 `/reviews` 和 `/tmp`。
-    技能、策略、运行环境和日志目录默认只读，最终边界仍由 LocalShellBackend
-    做 Windows 路径校验与写入保护。
+    技能、策略、运行环境和日志目录默认只读，
+    最终边界仍由 LocalShellBackend做 Windows 路径校验与写入保护。
     """
-
     return [
         FilesystemPermission(
-            operations=["read"],
+            operations=["read"],##===================================
             paths=[
-                "/projects/**",
+                "/projects/**",##===================================
                 "/skills/**",
                 "/policies/**",
-                "/reviews/**",
+                "/reviews/**",##===================================
                 "/runtimes/**",
                 "/logs/**",
-                "/tmp/**",
-                "/memories/**",
+                "/tmp/**",##===================================
+                "/memories/**",##===================================
             ],
             mode="allow",
         ),
         FilesystemPermission(
-            operations=["write"],
-            paths=["/projects/**", "/reviews/**", "/tmp/**", "/memories/**"],
+            operations=["write"],##===================================
+            paths=["/projects/**", "/reviews/**", "/tmp/**", "/memories/**"],##===================================
             mode="allow",
         ),
+
+
         FilesystemPermission(
             operations=["write"],
             paths=["/skills/**", "/policies/**", "/runtimes/**", "/logs/**"],
@@ -271,93 +363,6 @@ def _agent_filesystem_permissions() -> list[FilesystemPermission]:
     ]
 
 
-def _task_kind_from_config(configurable: dict[str, Any]) -> TaskKind:
-    """从 config 中读取任务类型，非法值统一回退为 coding。"""
-
-    value = configurable.get("task_kind", "coding")
-    if value in {"coding", "analysis", "planning", "qa", "sync", "inspect", "review"}:
-        return value
-    return "coding"
-
-
-def _prepare_repo_backend_context(
-    *,
-    repo_url: Any,
-    backend: LocalShellBackend,
-) -> tuple[Any, list[str] | None, str | None]:
-    """为指定 Gitee 仓库准备 repo 级 backend 和长期记忆。
-
-    `LocalShellBackend` 负责真实的 Windows 文件和命令执行；如果任务绑定了
-    Gitee 仓库，这里再把 `/memories/` 路径挂到 DeepAgents `StoreBackend` 上。
-    同时读取记忆文件内容返回，避免后续 middleware 重复查询数据库。
-    返回: (CompositeBackend, [memory_virtual_path], memory_content_str | None)
-    """
-
-    if not isinstance(repo_url, str) or not repo_url.strip():
-        # 没有仓库地址时，只能使用普通本地 backend；例如纯问答或测试入口探测。
-        return backend, None, None
-
-    # 仓库地址是仓库记忆命名空间的唯一来源，格式必须能解析为 owner/repo。
-    repo = parse_gitee_repo_url(repo_url)
-    langgraph_store = get_langgraph_store()
-    project_dir = repo_project_dir(repo)
-
-    # 初始化只在记忆不存在时写入模板；已有记忆不会被覆盖。
-    ensure_repo_memory_initialized(
-        store=langgraph_store,
-        repo=repo,
-        project_dir=project_dir,
-    )
-    # 顺带读一次记忆内容，传给 ContextInjectionMiddleware 避免重复查询
-    memory_path = repo_memory_virtual_path(repo.owner, repo.repo)
-    memory_content: str | None = None
-    memory_item = langgraph_store.get(
-        build_repo_memory_namespace(repo.owner, repo.repo),
-        repo_memory_store_key(repo.owner, repo.repo),
-    )
-    if memory_item is not None:
-        content = str(memory_item.value.get("content") or "").strip()
-        if content:
-            memory_content = content
-
-    # 返回 CompositeBackend 后，Agent 内部读 /memories/... 会走 StoreBackend，
-    # 读 /projects/...、执行命令和读取 skills 仍然走 LocalShellBackend。
-    return (
-        create_repo_backend(
-            local_backend=backend,
-            store=langgraph_store,
-            owner=repo.owner,
-            repo=repo.repo,
-        ),
-        [memory_path],
-        memory_content,
-    )
-
-def create_repo_backend(
-    *,
-    local_backend: LocalShellBackend,
-    store: BaseStore,
-    owner: str,
-    repo: str,
-) -> CompositeBackend:
-    """创建当前仓库专用的 CompositeBackend。
-
-    - `/projects`、`/skills`、`/runtimes` 和 `execute()` 继续走 LocalShellBackend。
-    - `/memories/` 走 DeepAgents 原生 StoreBackend，底层由 LangGraph Store 持久化。
-    """
-    namespace = build_repo_memory_namespace(owner, repo)
-    return CompositeBackend(
-        # default backend 覆盖绝大多数路径和命令执行能力。
-        default=local_backend,
-        routes={
-            # /memories/ 是虚拟路径，不对应 Windows 真实目录。
-            # DeepAgents 原生 memory=[...] 会通过这里落到 LangGraph Store。
-            "/memories/": StoreBackend(
-                store=store,
-                namespace=lambda _rt, _namespace=namespace: _namespace,
-            )
-        },
-    )
 
 
 def ________():pass
@@ -373,23 +378,29 @@ def ________():pass
 # if repo_url:
 #     # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
 #     configurable["repo_url"] = repo_url
-# return get_agent({"configurable": configurable})##===================================
+# return get_agent({"configurable": configurable}) ##===================================
+
+    # if repo_memory_content:
+    #     configurable["_repo_memory_content"] = repo_memory_content ##===================================
 def get_agent(config: RunnableConfig):
     """按照 指定 thread 构建 DeepAgent。
 
-    之前项目 的入口是 `async def get_agent(config)`，因为它需要异步解析用户身份、
-    远程 sandbox、团队模型配置等。课程版全部使用本地配置，因此这里保留同名
-    工厂函数，但实现为同步函数，方便 FastAPI 后台任务直接调用。
+    之前项目 的入口是 `async def get_agent(config)`，因为它需要
+    异步解析用户身份、
+    远程 sandbox、
+    团队模型配置等。
+    课程版全部使用本地配置，因此这里保留同名工厂函数，但实现为同步函数，方便 FastAPI 后台任务直接调用。##===================================
     """
-
     # 复制 config，避免调用方传入的 dict 被 Agent 工厂就地改写。
     config = dict(config or {})
     configurable = dict(config.get("configurable") or {})
-    thread_id = configurable.get("thread_id")
+    thread_id = configurable.get("thread_id")##===================================
     config["configurable"] = configurable
     config["recursion_limit"] = config.get("recursion_limit", DEFAULT_RECURSION_LIMIT)
 
-    if not isinstance(thread_id, str) or not thread_id or not graph_loaded_for_execution(config):
+
+    ##return bool(configurable.get("__is_for_execution__", False))
+    if not isinstance(thread_id, str) or not thread_id or not graph_loaded_for_execution(config):##===================================
         # 讲课重点：
         # 有些框架或调试脚本会“探测”Agent 图结构，但这不代表要真正执行任务。
         # 这里返回空 Agent，是为了避免没有 thread_id 时就创建 backend、加载工具、
@@ -397,47 +408,58 @@ def get_agent(config: RunnableConfig):
         logger.info("没有 thread_id 或不是执行态，返回空 Agent")
         return create_deep_agent(system_prompt="", tools=[]).with_config(config)
 
+
     # task_kind 是系统提示词、权限策略和运行保护策略的共同输入。
-    task_kind = _task_kind_from_config(configurable)
+    task_kind = _task_kind_from_config(configurable)##===================================
+
 
     # backend 按 thread 复用，避免同一个会话内反复初始化 Windows 工作区封装。
-    backend = ensure_backend_for_thread(thread_id)
-    repo_url = configurable.get("repo_url")
-    langgraph_store = get_langgraph_store()
+    backend = ensure_backend_for_thread(thread_id)##===================================
+
+
+    repo_url = configurable.get("repo_url")##===================================
+
+
     # server.py 在创建 Agent 之前，已经顺手读到了当前仓库记忆内容；
     # 那就把内容放进 config，后面的 ContextInjectionMiddleware 直接用，
     # 避免 middleware 再查一次 LangGraph Store。
-    agent_backend, memory_paths, repo_memory_content = _prepare_repo_backend_context(repo_url=repo_url, backend=backend)
+    ##backend其它方法    ##memory_path = ##return f"/memories/{owner}/{repo}.md"    ##store的记忆内容
+    agent_backend,  memory_paths, repo_memory_content = _prepare_repo_backend_context(repo_url=repo_url, backend=backend)##===================================##===================================
     if repo_memory_content:
         configurable["_repo_memory_content"] = repo_memory_content
-
     def backend_factory(_runtime: object, _thread_id: str = thread_id) -> Any:
-        # DeepAgents 0.6.x 直接传入带命令执行能力的 backend 时，和 permissions
-        # 组合仍有兼容限制；因此这里保留 factory 形式，同时返回已经准备好的
+        # DeepAgents 0.6.x 直接传入带命令执行能力的 backend 时，
+        # 和 permissions 组合仍有兼容限制；
+        # 因此这里保留 factory 形式，同时返回已经准备好的
         # thread 级 backend。Agent 实例可以按请求重建，backend 和工作区继续复用。
         return agent_backend
+
 
     # 课程版暂时主 Agent 和子 Agent 共用 deepseek-v4-pro。
     # 后续如果要演示 之前项目 的 profile / fallback / team defaults，
     # 可以从这里拆出 main_model 和 subagent_model 的不同配置。
     # 这里每次创建 Agent 都重新创建 model wrapper，但模型调用状态不依赖该对象保存。
-    main_model = make_main_model()
-    subagent_model = make_main_model()
+    main_model = make_main_model()##===================================
+    subagent_model = make_main_model()##===================================
+
 
     from agent.core.graph import get_checkpointer
-
+    langgraph_store = get_langgraph_store()#这里的store专门服务 `/memories/...` 长期记忆文件
     logger.info("返回带 backend 的 Agent：thread_id=%s task_kind=%s", thread_id, task_kind)
     # 这里是整套 Agent 能力的装配点。讲课时建议从这些参数逐个展开：
     # model 决定推理能力；tools 提供业务动作；system_prompt 提供任务规则；
-    # subagents 负责分析委派；backend/permissions 决定文件系统边界；
-    # middleware 做上下文注入、消息兼容清洗、参数清洗、上下文压缩和异常恢复；
+    # subagents 负责分析委派；
+
+    # backend/permissions 决定文件系统边界；##===================================
+    # middleware 做上下文注入-上下文压缩、消息兼容清洗、参数清洗、和异常恢复；##===================================
     # skills 提供任务方法论；
-    # checkpointer 保存 LangGraph thread state。
+    # checkpointer 保存 历史消息
+    # LangGraph thread state。
     return create_deep_agent(  # 创建一个Agent
         model=main_model,
         tools=[
-            web_search,
-            fetch_url,
+            web_search,##
+            fetch_url,##
             open_gitee_pull_request,
             publish_gitee_pr_comment,
             get_gitee_pull_request_context,
@@ -448,9 +470,10 @@ def get_agent(config: RunnableConfig):
             list_review_findings,
         ],
         system_prompt=get_system_prompt(task_kind),
-        subagents=[_general_purpose_subagent(subagent_model), _code_reviewer_subagent(subagent_model)],
+        subagents=[_general_purpose_subagent(subagent_model), ##===================================##===================================
+                   _code_reviewer_subagent(subagent_model)], ##===================================##===================================
         backend=backend_factory,
-        permissions=_agent_filesystem_permissions(),
+        permissions=_agent_filesystem_permissions(),##===================================
         # 精简对话工具 compact_conversation
         # 你有一个名为 compact_conversation 的工具可用。该工具会刷新你的上下文窗口，以减少上下文膨胀和成本。
         #
@@ -460,22 +483,27 @@ def get_agent(config: RunnableConfig):
         #
         # 你已经完成结果的提取或合成，不再需要之前的工作上下文时。
         middleware=[
-            ContextInjectionMiddleware(),
-            MessageSanitizeMiddleware(),
-            SanitizeToolInputsMiddleware(backend=backend),
+            ContextInjectionMiddleware(),##========
+            MessageSanitizeMiddleware(),##========
+            SanitizeToolInputsMiddleware(backend=backend),##========
             create_summarization_tool_middleware(main_model, agent_backend),
             ModelCallLimitMiddleware(run_limit=MODEL_CALL_RECURSION_LIMIT, exit_behavior="end"),
-            ToolErrorMiddleware(backend=backend),
+            ToolErrorMiddleware(backend=backend),##========
         ],
+
+
+
         skills=["/skills/"],
+
+
+
         # memory 只声明 Agent 可以访问的长期记忆文件路径；
         # 具体读写会通过上面的 /memories/ StoreBackend 路由完成。
-        memory=memory_paths,
-
+        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"
         # checkpointer 是聊天历史、工具消息和图状态的权威来源。
-        # 前端历史恢复应读取 checkpoint，不应读取业务 Store 事件。
+        # 前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         checkpointer=get_checkpointer(),
-
         # store 传给 DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
         store=langgraph_store,
     ).with_config(config)
+
