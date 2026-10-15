@@ -193,7 +193,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
     def get_work_dir(self) -> str:
         # DeepAgents 协议：返回默认工作目录的虚拟路径
-        return VIRTUAL_PROJECTS
+        return VIRTUAL_PROJECTS##"/projects" ##===================================##===================================
 
     def get_workspace_root(self) -> str:
         # DeepAgents 协议：返回虚拟根路径
@@ -203,14 +203,14 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         """健康检查：检测目录、Git、Python、Node 等是否可用。"""
         checks = {
             "root_exists": self.root.exists(),
-            "root_writable": self._is_writable(self.root),
+            "root_writable": self._is_writable(self.root),##===================================
             "projects_exists": self.projects_dir.exists(),
             "skills_exists": self.skills_dir.exists(),
-            "python_venv_exists": self.shared_python_venv.exists(),
+            "python_venv_exists": self.shared_python_venv.exists(),##===================================
             "git_available": shutil.which("git") is not None,
-            "python_available": self._system_python() is not None,
+            "python_available": self._system_python() is not None,##===================================
             "node_available": shutil.which("node") is not None,
-            "command_guard_enabled": self.command_guard_enabled,
+            "command_guard_enabled": self.command_guard_enabled,##===================================
         }
         return {
             "type": "local_shell",
@@ -255,25 +255,28 @@ class LocalShellBackend(BaseSandbox):##===================================##====
 
         return self.secrets_dir / ("gitee_askpass.cmd" if IS_WINDOWS else "gitee_askpass.sh")
 
-    # ── DeepAgents 原生协议实现 ─────────────────────────────
 
+    def _______各种实现工具(self):
+        pass
+    # ── DeepAgents 原生协议实现 ─────────────────────────────
     def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
         """执行 DeepAgents 原生命令工具请求。
 
         这里是模型调用 `execute` 工具时最终进入的入口，处理顺序是：
-        1. 先做安全拒绝判断，拦截危险命令和工作区外路径；
-        2. 再做命令预处理，把虚拟路径和部分跨平台差异命令转换成当前系统可执行形式；
-        3. 最后通过 subprocess 执行，并把 stdout/stderr 合并成模型容易阅读的文本。
+        1. 先做安全拒绝判断，拦截危险命令和工作区外路径；##===================================
+        2. 再做命令预处理，把虚拟路径和部分跨平台差异命令转换成当前系统可执行形式；##===================================
+        3. 最后通过 subprocess 执行，并把 stdout/stderr 合并成模型容易阅读的文本。##===================================
 
         注意：这个方法不向上抛异常，而是按 DeepAgents 协议返回结构化结果。
         这样模型可以基于 exit_code 和 output 继续修正命令或解释失败原因。
         """
         if self.command_guard_enabled:
-            denied = self._deny_reason(command)
+            denied = self._deny_reason(command)##===================================
             if denied:
                 return ExecuteResponse(output=f"命令被拒绝：{denied}", exit_code=126, truncated=False)
 
-        prepared_command = self._prepare_command(command, cwd_path=self.projects_dir)
+
+        prepared_command = self._prepare_command(command, cwd_path=self.projects_dir)##===================================
         effective_timeout = timeout if timeout is not None else self.default_timeout
         try:
             completed = subprocess.run(
@@ -289,11 +292,12 @@ class LocalShellBackend(BaseSandbox):##===================================##====
                 shell=True,  # 通过系统 shell 执行字符串命令，兼容内置命令和 Git 命令
                 **self._shell_kwargs(),
             )
+
             output = completed.stdout
             # stderr 内容拼到 output 里，方便 LLM 统一查看
             if completed.stderr.strip():
                 stderr = completed.stderr.strip()
-                output = f"{output}\n<stderr>{stderr}</stderr>" if output else stderr
+                output = f"{output}\n<stderr>{stderr}</stderr>" if output   else stderr##===================================##===================================##===================================
             return ExecuteResponse(
                 output=_mask_token(output.rstrip()),
                 exit_code=completed.returncode,
@@ -303,12 +307,12 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             stdout = exc.stdout or ""
             stderr = exc.stderr or ""
             return ExecuteResponse(
-                output=_mask_token(f"命令执行超时：{effective_timeout} 秒\n{stdout}{stderr}".strip()),
+                output=_mask_token(f"命令执行超时：{effective_timeout} 秒\n{stdout}{stderr}".strip()),##===================================##===================================
                 exit_code=124,
                 truncated=False,
             )
         except Exception as exc:
-            # 协议要求：所有异常都要转成结构化结果，不能抛出去
+            # 协议要求：所有异常都要转成结构化结果，不能抛出 去##===================================##===================================
             return ExecuteResponse(output=f"命令执行失败：{_mask_token(str(exc))}", exit_code=1, truncated=False)
 
     def ls(self, path: str) -> LsResult:
@@ -568,7 +572,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         )
 
 
-    def _______(self):
+    def ________ensure_layout(self):
         pass
     # ── 初始化相关 ───────────────────────────────────────────
     def _ensure_layout(self) -> None:
@@ -844,14 +848,14 @@ class LocalShellBackend(BaseSandbox):##===================================##====
             return "nested projects path is denied; use /projects/<repo> for file tools or <repo> in execute commands"
         if "../" in command or "..\\" in command:
             return "path traversal outside workspace is denied"
-        if not IS_WINDOWS and _LINUX_SENSITIVE_PATH_RE.search(command):
+        if not IS_WINDOWS and _LINUX_SENSITIVE_PATH_RE.search(command):##===================================
             return "absolute Linux system path is denied"
-        for pattern in _DANGEROUS_PATTERNS:
+        for pattern in _DANGEROUS_PATTERNS:##===================================
             if re.search(pattern, lowered):
                 return f"dangerous command pattern matched: {pattern}"
-        for match in _DRIVE_PATH_RE.finditer(command):
+        for match in _DRIVE_PATH_RE.finditer(command):##===================================
             candidate = Path(match.group(1)).resolve()
-            if not self._is_under_root(candidate):
+            if not self._is_under_root(candidate):##===================================##===================================
                 return f"absolute path outside workspace: {candidate}"
         return None
 
@@ -861,14 +865,14 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         """执行前的命令预处理：适配当前系统、替换虚拟路径。
 
         LLM 常按 Linux/Unix 习惯生成命令，例如 `python3`、`pwd`、`test -d`。
-        Windows 本地开发时，本方法会把这些常见表达转换成 Windows 可执行形式；
-        Linux 部署时，这些命令通常可以原样执行。
-        同时把 `/projects/...` 这样的虚拟路径替换为带引号的真实路径。
+        Windows 本地开发时，本方法会把这些常见表达转换成 Windows 可执行形式；##===================================
+        Linux 部署时，这些命令通常可以原样执行。##===================================
+        同时把 `/projects/...` 这样的虚拟路径替换为带引号的真实路径。##===================================##===================================
         """
         if cwd_path is not None and cwd_path.resolve() == self.projects_dir.resolve():
-            command = self._normalize_command_for_projects_cwd(command)
+            command = self._normalize_command_for_projects_cwd(command)##===================================
         prepared = command.replace("python3 ", "python ") if IS_WINDOWS else command
-        prepared = _VIRTUAL_PATH_RE.sub(self._virtual_command_path_replacement, prepared)
+        prepared = _VIRTUAL_PATH_RE.sub(self._virtual_command_path_replacement, prepared)##===================================
         # 兼容 Unix 常用命令
         if IS_WINDOWS and prepared.strip() == "pwd":
             return "cd"
@@ -877,19 +881,18 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         if IS_WINDOWS and prepared.startswith("test -d "):
             return "echo ok"
         return self._prepare_git_command(prepared)
-
     def _normalize_command_for_projects_cwd(self, command: str) -> str:
         """修正默认在 /projects 目录执行时容易产生的重复相对路径。
 
         DeepAgents 原生 execute 没有 cwd 参数，本项目会把命令默认放在
         `/projects` 对应的真实 projects 目录下执行。此时如果命令中再写
         projects/<repo>，实际访问路径会变成 projects/projects/<repo>。
-        这里把相对的 projects/<repo> 收敛成 <repo>，把单独的 projects 收敛成 .。
+        这里把相对的 projects/<repo> 收敛成 <repo>，把单独的 projects 收敛成 .。##===================================
         以 /projects 开头的虚拟路径不受影响，后续仍会映射到真实工作区目录。
         """
 
-        normalized = _RELATIVE_PROJECTS_PATH_RE.sub("", command)
-        normalized = _RELATIVE_PROJECTS_DIR_RE.sub(".", normalized)
+        normalized = _RELATIVE_PROJECTS_PATH_RE.sub("", command)##===================================
+        normalized = _RELATIVE_PROJECTS_DIR_RE.sub(".", normalized)##===================================
         if normalized != command:
             logger.info(
                 "已修正 projects 工作目录下的重复相对路径：%s -> %s",
@@ -897,6 +900,7 @@ class LocalShellBackend(BaseSandbox):##===================================##====
                 _mask_token(normalized),
             )
         return normalized
+
 
     def _prepare_git_command(self, command: str) -> str:
         """给 git 命令注入 askpass 配置，避免弹窗或使用过期的凭据管理器。
@@ -973,16 +977,18 @@ class LocalShellBackend(BaseSandbox):##===================================##====
         - 如果配置了 Gitee token，通过 `GIT_ASKPASS` 注入，不拼进命令字符串。
         """
         env = os.environ.copy()
-        scripts = self._venv_bin_dir()
+        scripts = self._venv_bin_dir()##===================================
         if scripts.exists():
             env["PATH"] = f"{scripts}{os.pathsep}{env.get('PATH', '')}"
-            env["VIRTUAL_ENV"] = str(self.shared_python_venv)
+            env["VIRTUAL_ENV"] = str(self.shared_python_venv)##===================================
+
+
         # 禁止 Git 交互式弹窗，出错直接返回
         env["GIT_TERMINAL_PROMPT"] = "0"
         env["GCM_INTERACTIVE"] = "Never"
         gitee_token = get_env("GITEE_TOKEN").strip() or get_env("SCM_GITEE_TOKEN").strip()
         if gitee_token:
-            env["GIT_ASKPASS"] = str(self._git_askpass_path())
+            env["GIT_ASKPASS"] = str(self._git_askpass_path())##===================================
             env["GITEE_ASKPASS_USERNAME"] = "oauth2"
             env["GITEE_ASKPASS_TOKEN"] = gitee_token
         return env
