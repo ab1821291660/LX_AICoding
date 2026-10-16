@@ -19,17 +19,18 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 from typing import Literal
-
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, field_validator
 
 from agent.core.model import make_intent_model##===================================##===================================
-
-TaskKind = Literal["coding", "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
-
 logger = logging.getLogger("agent.run.task_intent")
 
-_ALLOWED_TASK_KINDS: set[str] = {"coding", "analysis", "planning", "qa", "sync", "inspect", "review"}
+##coding 是唯一允许写文件、执行提交、push 和创建 PR 的模式。##===================================##===================================
+##其余模式都按只读任务处理，最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。##===================================##===================================
+TaskKind = Literal["coding",
+                   "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
+_ALLOWED_TASK_KINDS: set[str] = {"coding",
+                                 "analysis", "planning", "qa", "sync", "inspect", "review"}
 
 
 class IntentClassification(BaseModel):
@@ -367,14 +368,13 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
 
     return predicted
 
-
+def ________classify_task_kind(self):pass
 def classify_task_kind(prompt: str) -> TaskKind:
     """按用户意图选择 Agent 工作模式。
 
-    coding 是唯一允许写文件、执行提交、push 和创建 PR 的模式。其余模式都按只读任务处理，
-    最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。
+    coding 是唯一允许写文件、执行提交、push 和创建 PR 的模式。##===================================##===================================
+    其余模式都按只读任务处理，最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。##===================================##===================================
     """
-
     normalized = _normalize_prompt(prompt)
     if not normalized:
         return "qa"
@@ -406,5 +406,8 @@ def classify_task_kind(prompt: str) -> TaskKind:
 
 def is_read_only_task(task_kind: TaskKind) -> bool:
     """只读任务不允许写文件、提交、push 和创建 PR。"""
-
     return task_kind in {"analysis", "planning", "qa", "inspect", "review"}
+                        ##"sync", 少了这个
+
+
+
