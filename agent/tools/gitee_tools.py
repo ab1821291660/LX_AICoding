@@ -121,7 +121,7 @@ def get_gitee_pull_request_context(owner: str, repo: str, number: int) -> dict[s
     """读取 Gitee Pull Request 审查上下文。
 
     Reviewer 子 Agent 使用该工具获取 PR 标题、描述、变更文件、提交列表和已有评论。
-    该工具只读，不会修改 Gitee 仓库。
+    该工具只读，，不会修改 Gitee 仓库。
     """
 
     logger.info("读取 Gitee PR 上下文：owner=%s repo=%s number=%s", owner, repo, number)

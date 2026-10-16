@@ -29,14 +29,16 @@ from .web_search import web_search
 
 # 明确声明对外工具列表，避免调用方依赖模块内的临时变量或辅助函数。
 __all__ = [
-    "add_review_finding",
     "fetch_url", ##
+    "open_gitee_pull_request",
+    "publish_gitee_pr_comment",
     "get_gitee_pull_request_context",
+    "web_search",  ##
+    "add_review_finding",
     "get_review_diff_summary",
     "list_review_findings",
     "load_default_review_rules",
-    "open_gitee_pull_request",
-    "publish_gitee_pr_comment",
     "validate_review_finding_location",
-    "web_search", ##
+
 ]
+
