@@ -406,7 +406,7 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
                 run_agent_task(##===================================
                     # 本轮任务绑定的 Gitee 仓库地址，已经在外层 API 边界做过规范化。
                     repo_url=repo_url,
-                    # 用户本轮真实输入，runtime 会根据任务类型-决定是否包装内部执行上下文。##===================================
+                    # 用户本轮真实输入，runtime 会根据任务类型--决定是否包装内部执行上下文。##===================================
                     prompt=content,
                     # 当前会话 id，用于绑定 Store、checkpoint、SSE 和 Agent config。
                     thread_id=thread_id,

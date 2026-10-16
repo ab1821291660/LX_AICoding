@@ -405,7 +405,7 @@ def classify_task_kind(prompt: str) -> TaskKind:
         logger.info("关键词快速分类：task_kind=sync")
         return "sync"
 
-    if is_workspace_listing_task(prompt):
+    if is_workspace_listing_task(prompt):##===================================
         logger.info("关键词快速分类：task_kind=inspect")
         return "inspect"##检查
 

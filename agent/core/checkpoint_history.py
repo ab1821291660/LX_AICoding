@@ -221,6 +221,7 @@ def stable_history_message_id(thread_id: str, author: str, content: str) -> str:
     return f"{thread_id}-history-{author}-{digest}"
 
 
+def ________(self):pass
 def visible_checkpoint_messages(thread_id: str) -> list[dict[str, Any]]:
     """读取并整理某个 thread 的用户可见历史消息。
 
@@ -231,7 +232,7 @@ def visible_checkpoint_messages(thread_id: str) -> list[dict[str, Any]]:
 
     如果 checkpoint 读取失败或没有可用消息，返回空列表。
     前端历史不再回退读取 Store，
-    Store 只保存任务摘要、运行状态、review findings 等业务数据。
+    Store 只保存任务摘要、运行状态、review findings 等业务数据。##===================================
     """
 
     visible: list[dict[str, Any]] = []
@@ -241,18 +242,20 @@ def visible_checkpoint_messages(thread_id: str) -> list[dict[str, Any]]:
         role = _message_role(message)
         if role is None:
             continue
+
+
         text = _content_to_text(getattr(message, "content", None))
         if not text:
             continue
-
         if role == "user":
             text = _extract_user_prompt(text)
         elif not _has_visible_markdown_value(text):
             continue
-
         text = text.strip()
         if not text:
             continue
+
+
         key = _dedupe_key(role, text)
         if key in seen:
             continue

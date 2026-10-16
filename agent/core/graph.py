@@ -40,7 +40,7 @@ def get_checkpointer():
     return _checkpointer
 
 
-def get_langgraph_store():
+def get_langgraph_store():##这里的store专门服务 `/memories/...` 长期记忆文件
     """获取 DeepAgents StoreBackend 使用的 LangGraph SQLite Store。
 
     业务数据仍然写入 `store.sqlite`，

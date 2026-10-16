@@ -715,7 +715,7 @@ def _consume_raw_event_stream(
     return tool_call_index if saw_write_todos else 0, subagent_index
 
 
-def run_agent_with_event_stream(
+def run_agent_with_event_stream(##===================================##===================================
     *,
     agent: Any,
     thread_id: str,
