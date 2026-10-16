@@ -39,25 +39,26 @@ MAX_REPO_MEMORY_CHARS = 6000
 
 def _repo_url_and_content_from_config() -> tuple[str | None, str | None]:
     """从 LangGraph 运行时配置中读取 repo_url 和缓存的记忆内容。
-
     Runtime 对象本身没有 config 字段（见 langgraph.runtime.Runtime），
     必须通过 langgraph.config.get_config() 才能访问 RunnableConfig。
+
 
     返回值：
     - repo_url：当前任务绑定的 Gitee 仓库地址。
     - memory_content：runtime.py 预先读取并放入 configurable 的仓库记忆内容。
 
+
     为什么优先读取 `_repo_memory_content`：
     runtime.py 在准备任务时通常已经完成仓库解析和记忆初始化。如果这里能够
-    直接复用缓存内容，就可以避免中间件再次访问 SQLite Store。只有缓存缺失时，
-    before_agent 才会走兜底读取。
+    直接复用缓存内容，就可以避免中间件再次访问 SQLite Store。
+    只有缓存缺失时，before_agent 才会走兜底读取。
     """
-    configurable = get_config().get("configurable", {})
+    configurable = get_config().get("configurable", {})##===================================
     if not isinstance(configurable, dict):
         return None, None
-    repo_url = configurable.get("repo_url")
+    repo_url = configurable.get("repo_url")##===================================
     repo_url = repo_url if isinstance(repo_url, str) and repo_url.strip() else None
-    memory_content = configurable.get("_repo_memory_content")
+    memory_content = configurable.get("_repo_memory_content")##===================================
     memory_content = str(memory_content).strip() if isinstance(memory_content, str) and memory_content.strip() else None
     return repo_url, memory_content
 
@@ -76,9 +77,9 @@ def _build_repo_context_notice(
     ContextInjectionMiddleware 的模式——基础上下文始终注入，不因文件不存在就跳过。
 
     这条 SystemMessage 只用于“提示模型当前仓库背景”，不作为权限边界。
-    真正的读写边界仍然由 LocalShellBackend、工具参数清洗中间件和权限校验代码控制。
+    真正的读写边界仍然由 LocalShellBackend、工具参数清洗中间件 和权限校验代码控制。
     """
-    memory_path = repo_memory_virtual_path(owner, repo)
+    memory_path = repo_memory_virtual_path(owner, repo)## return f"/memories/{owner}/{repo}.md"
     lines = [
         "【当前仓库上下文】",
         f"仓库地址：{repo_url}",
@@ -101,25 +102,24 @@ def _build_repo_context_notice(
         lines += [
             "",
             # 没有记忆时也要告诉模型“应该在哪里沉淀记忆”。
-            # 这样模型在需要时可以通过 backend 暴露的文件能力读取或更新虚拟记忆文件。
+            # 这样模型在需要时可以通过 backend 暴露的文件能力  读取  或更新虚拟记忆文件。
             "该仓库的记忆文件尚未创建。你可以通过 write_file 将仓库的结构、",
             "技术栈、启动命令、测试命令等稳定结论写入该文件，供后续任务参考。",
         ]
     return "\n".join(lines)
 
 
-class ContextInjectionMiddleware(AgentMiddleware):
-    """在整轮 Agent 开始前注入仓库级长期记忆上下文。
 
-    记忆只在 `before_agent/abefore_agent` 注入一次，避免在每次模型调用前重复增加
-    token 成本。`memory=[repo_memory_virtual_path(owner, repo)]` 仍然保留，便于 Agent
-    主动读写当前仓库自己的记忆文件；
-    本中间件负责让模型一开始就看到核心仓库上下文。
+
+class ContextInjectionMiddleware(AgentMiddleware):
+    """在整轮 Agent 开始前注入仓库级长期记忆上下文。本中间件负责让模型一开始就看到核心仓库上下文。
+
+    记忆只在 `before_agent/abefore_agent` 注入一次，避免在每次模型调用前重复增加token 成本。
+    `memory=[repo_memory_virtual_path(owner, repo)]` 仍然保留，便于 Agent主动读写当前仓库自己的记忆文件；
 
     即使仓库记忆尚未创建，也会注入基础仓库标识和文件路径，
     参考 erp_harness01 ContextInjectionMiddleware 的模式。
     """
-
     state_schema = AgentState
 
     def before_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
@@ -131,6 +131,8 @@ class ContextInjectionMiddleware(AgentMiddleware):
             # 这种情况下不注入仓库上下文，避免给问答类或系统类任务制造错误背景。
             return None
 
+
+
         # 2. 解析 Gitee 仓库地址，得到 owner/repo。
         #    parse_gitee_repo_url 只接受 Gitee 地址，符合当前项目“只支持 Gitee”的规则。
         repo = parse_gitee_repo_url(repo_url)
@@ -139,9 +141,12 @@ class ContextInjectionMiddleware(AgentMiddleware):
             # 3. 兜底：缓存的记忆内容不存在时，直接从 Store 读取。
             #    正常路径中 runtime.py 会提前初始化并缓存记忆；这里保留兜底逻辑，
             #    是为了避免未来新增运行入口时忘记把 `_repo_memory_content` 放入 config。
-            namespace = build_repo_memory_namespace(repo.owner, repo.repo)
-            item = get_langgraph_store().get(namespace, repo_memory_store_key(repo.owner, repo.repo))
+            namespace = build_repo_memory_namespace(repo.owner, repo.repo)# ("lx-aicoding", "repo-memory", owner.lower(), repo.lower())
+            item = get_langgraph_store().get(namespace,
+                                             repo_memory_store_key(repo.owner, repo.repo))##return f"/{owner}/{repo}.md"
             memory_content = str(item.value.get("content") or "").strip() if item is not None else None
+
+
 
         if memory_content:
             logger.info(
@@ -153,7 +158,6 @@ class ContextInjectionMiddleware(AgentMiddleware):
                 "仓库记忆尚不存在，注入基础上下文：repo=%s/%s",
                 repo.owner, repo.repo,
             )
-
         # 4. 组装面向模型的仓库上下文。这里会自动脱敏 token，防止日志或模型上下文泄露凭证。
         notice = _build_repo_context_notice(##===================================
             owner=repo.owner,
@@ -165,7 +169,6 @@ class ContextInjectionMiddleware(AgentMiddleware):
         #    使用 SystemMessage 是为了让模型把它当作高优先级上下文，而不是普通用户输入。
         messages = list(state.get("messages", []))
         return {"messages": [SystemMessage(content=notice), *messages]}
-
     async def abefore_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
         # DeepAgents 可能走同步或异步运行路径。异步钩子复用同步逻辑，保证两条路径行为一致。
         return self.before_agent(state, runtime)

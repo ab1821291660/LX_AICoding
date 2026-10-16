@@ -18,10 +18,10 @@
 from __future__ import annotations
 import re
 from pathlib import Path
-class WorkspacePermissionError(PermissionError):
+class WorkspacePermissionError(PermissionError):##===================================
     """工作区或命令权限错误。
 
-    继承 `PermissionError` 的好处是：
+    继承 `PermissionError` 的好处是：##===================================
     - 调用方可以按标准权限异常处理；
     - middleware 能识别这是可恢复的安全拒绝，而不是系统崩溃；
     - 错误语义比普通 `ValueError` 更明确。

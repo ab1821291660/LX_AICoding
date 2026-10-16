@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 """用户任务意图识别。
-
 本文件负责把用户输入归类为 Agent 的第一层任务类型。任务类型会直接影响后续
 系统提示词、工具权限、是否允许修改代码、是否创建 Pull Request 等关键行为。
 
@@ -21,9 +19,9 @@ from functools import lru_cache
 from typing import Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field, field_validator
-
 from agent.core.model import make_intent_model##===================================##===================================
 logger = logging.getLogger("agent.run.task_intent")
+
 
 ##coding 是唯一允许写文件、执行提交、push 和创建 PR 的模式。##===================================##===================================
 ##其余模式都按只读任务处理，最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。##===================================##===================================
@@ -31,8 +29,27 @@ TaskKind = Literal["coding",
                    "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
 _ALLOWED_TASK_KINDS: set[str] = {"coding",                             ##检查      ##审查
                                  "analysis", "planning", "qa", "sync", "inspect", "review"}
+# ##system_prompt = """你是 AI Coding 系统的第一层用户意图分类器。
+# 你只负责分类，不要回答用户问题，不要生成方案，不要写代码。
+#
+# 【7个类别】你必须从以下固定类别中选择一个：
+# - coding：用户明确要求修改、实现、生成代码、执行已确认方案、提交、push、创建或复用 PR。
+# - planning：用户要求技术方案、实施方案、设计步骤、修改建议，或要求先给方案等待确认。
+# - analysis：用户要求分析项目、梳理结构、解释代码、检查现状、总结模块。
+
+# - qa：用户问概念、原因、区别、是否可以、某个文件/函数是做什么的。
+# - sync：用户只要求 git pull、拉取、同步远程代码，不要求修改。
+# - inspect：用户只问本地工作区、当前工作目录、有哪些项目。
+
+# - review：用户要求代码审查、PR review、读取 PR diff、输出审查报告，尤其是明确不要修改代码。
+
+def is_read_only_task(task_kind: TaskKind) -> bool:
+    """只读任务不允许写文件、提交、push 和创建 PR。"""
+    return task_kind in {"analysis", "planning", "qa", "inspect", "review"}
+                        ##"sync", 少了这个
 
 
+def ________(self):pass
 class IntentClassification(BaseModel):
     """模型意图分类的结构化输出。
 
@@ -50,6 +67,8 @@ class IntentClassification(BaseModel):
         """限制日志中的理由长度，避免模型返回大段文本污染日志。"""
 
         return value.strip()[:40]
+
+
 
 
 def _normalize_prompt(prompt: str) -> str:
@@ -93,7 +112,7 @@ def is_pull_only_task(prompt: str) -> bool:
     ]
     return _contains_any(normalized, pull_keywords) and not _contains_any(normalized, change_keywords)
 
-
+def ________step1前置规则(self):pass
 def is_workspace_listing_task(prompt: str) -> bool:
     """判断用户是否只是询问本地工作区有哪些项目。
 
@@ -104,6 +123,20 @@ def is_workspace_listing_task(prompt: str) -> bool:
     list_keywords = ["有哪些项目", "工作目录", "本地工作", "workspace", "项目列表"]
     change_keywords = ["修改", "修复", "创建", "提交", "push", "pr", "实现", "开发"]
     return _contains_any(normalized, list_keywords) and not _contains_any(normalized, change_keywords)
+
+
+
+def ________step2先模型__失败规则兜底(self):pass
+def _classify_by_keyword_backup(prompt: str) -> TaskKind:
+    """调用备份文件中的关键词分类逻辑。
+
+    备份文件是模型分类改造前的完整实现。模型不可用、结构化解析失败或测试环境没有
+    真实 key 时，仍然可以保持项目可用。
+    """
+
+    from agent.core.task_intent_keyword_backup import classify_task_kind as keyword_classify_task_kind
+
+    return keyword_classify_task_kind(prompt)
 
 
 @lru_cache(maxsize=1)
@@ -117,20 +150,7 @@ def _make_structured_intent_model():
 
     如果未来模型支持更严格的原生 JSON Schema，可以把 method 调整为 `json_schema`。
     """
-
     return make_intent_model().with_structured_output(IntentClassification, method="json_mode")##===================================##===================================
-
-
-def _classify_by_keyword_backup(prompt: str) -> TaskKind:
-    """调用备份文件中的关键词分类逻辑。
-
-    备份文件是模型分类改造前的完整实现。模型不可用、结构化解析失败或测试环境没有
-    真实 key 时，仍然可以保持项目可用。
-    """
-
-    from agent.core.task_intent_keyword_backup import classify_task_kind as keyword_classify_task_kind
-
-    return keyword_classify_task_kind(prompt)
 
 
 def _classify_by_model(prompt: str) -> TaskKind:
@@ -154,7 +174,7 @@ JSON 字段必须包含：
 - confidence：0 到 1 之间的小数。
 - reason：中文短理由，不超过 40 个字。
 """
-    result = _make_structured_intent_model().invoke(
+    result = _make_structured_intent_model().invoke(##===================================
         [SystemMessage(content=system_prompt), HumanMessage(content=f"用户输入：{prompt}")]
     )
     if isinstance(result, dict):
@@ -174,6 +194,7 @@ JSON 字段必须包含：
     return parsed.task_kind
 
 
+def ________step3后置规则修正__对模型分类结果做权限安全修正(self):pass
 def _has_negative_change_marker(normalized: str) -> bool:
     """识别用户明确要求不要改代码、不要提交、只读处理的表达。"""
 
@@ -333,7 +354,6 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
 
     这里是整个分类链路的安全阀：模型可以建议任务类型，但不能突破用户明确给出的只读边界。
     """
-
     normalized = _normalize_prompt(prompt)
     has_negative = _has_negative_change_marker(normalized)
     has_explicit_coding = _has_explicit_coding_marker(normalized)
@@ -341,6 +361,7 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
     has_planning = _has_planning_marker(normalized)
     has_review_fix_plan = _has_review_fix_plan_marker(normalized)
     has_coding = _has_coding_marker(normalized)
+
 
     if has_review_fix_plan and has_negative:
         return "planning"
@@ -352,6 +373,7 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
         if has_planning:
             return "planning"
         return "analysis"
+
 
     # “确认/开始/实施”这类短回复通常依赖上一轮方案。只要用户明确表达开始实施，
     # 就允许进入 coding，避免被模型误判成 qa 或 planning。
@@ -365,7 +387,6 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
     # 明确方案类且没有开发动作时，强制 planning。
     if has_planning and not has_coding:
         return "planning"
-
     return predicted
 
 def ________classify_task_kind(self):pass
@@ -375,39 +396,38 @@ def classify_task_kind(prompt: str) -> TaskKind:
     coding 是唯一允许写文件、执行提交、push 和创建 PR 的模式。##===================================##===================================
     其余模式都按只读任务处理，最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。##===================================##===================================
     """
-    normalized = _normalize_prompt(prompt)
+    normalized = _normalize_prompt(prompt)##===================================
     if not normalized:
         return "qa"
 
     # 两类低成本、低歧义任务先本地快速判断，避免无意义模型调用。
-    if is_pull_only_task(prompt):
+    if is_pull_only_task(prompt):##===================================
         logger.info("关键词快速分类：task_kind=sync")
         return "sync"
+
     if is_workspace_listing_task(prompt):
         logger.info("关键词快速分类：task_kind=inspect")
-        return "inspect"
+        return "inspect"##检查
+
+
 
     try:
-        predicted = _classify_by_model(prompt)
+        predicted = _classify_by_model(prompt)##===================================
     except Exception as exc:
-        fallback = _classify_by_keyword_backup(prompt)
+        fallback = _classify_by_keyword_backup(prompt)##===================================
         logger.warning(
             "模型意图分类失败，回退关键词分类：fallback=%s error=%s",
             fallback,
             exc,
         )
-        return _apply_security_guard(prompt, fallback)
 
+
+
+        return _apply_security_guard(prompt, fallback)##===================================
     final_kind = _apply_security_guard(prompt, predicted)
     if final_kind != predicted:
         logger.info("意图分类被安全规则修正：model=%s final=%s", predicted, final_kind)
     return final_kind
-
-
-def is_read_only_task(task_kind: TaskKind) -> bool:
-    """只读任务不允许写文件、提交、push 和创建 PR。"""
-    return task_kind in {"analysis", "planning", "qa", "inspect", "review"}
-                        ##"sync", 少了这个
 
 
 
