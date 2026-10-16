@@ -557,7 +557,7 @@ def _consume_raw_event_stream(
     write_todo_args_by_call: dict[str, str] = {}
     write_todo_last_payload_by_call: dict[str, str] = {}
     saw_write_todos = False
-    limit_tracker = AgentRunLimitTracker(task_kind=task_kind)
+    limit_tracker = AgentRunLimitTracker(task_kind=task_kind)##===================================##===================================
 
     for event in stream:
         # 每个 raw event 都先交给保护器计数。它可以识别模型调用过多、工具循环等异常。
