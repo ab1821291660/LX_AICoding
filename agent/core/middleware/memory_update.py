@@ -151,7 +151,7 @@ class MemoryUpdateMiddleware(AgentMiddleware):
         update_repo_memory_from_text(
             store=get_langgraph_store(),##见graph.py中的store 专门服务 `/memories/...` 长期记忆文件，内部表结构由
             repo=repo,
-            update=RepoMemoryUpdate(task_kind=_task_kind_from_config(),
+            update=RepoMemoryUpdate(task_kind=_task_kind_from_config(),##===================================
                                     final_text=final_text),
         )
         return None

@@ -29,7 +29,7 @@ logger = logging.getLogger("agent.run.task_intent")
 ##其余模式都按只读任务处理，最多准备或读取本地仓库，然后输出分析、方案、审查报告或答案。##===================================##===================================
 TaskKind = Literal["coding",
                    "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
-_ALLOWED_TASK_KINDS: set[str] = {"coding",
+_ALLOWED_TASK_KINDS: set[str] = {"coding",                             ##检查      ##审查
                                  "analysis", "planning", "qa", "sync", "inspect", "review"}
 
 

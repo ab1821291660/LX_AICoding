@@ -125,7 +125,7 @@ class ContextInjectionMiddleware(AgentMiddleware):
     def before_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
         # 1. 从 LangGraph RunnableConfig 读取当前仓库地址和预加载的仓库记忆。
         #    这里不直接使用 runtime，是因为当前 LangGraph Runtime 不暴露 config 字段。
-        repo_url, memory_content = _repo_url_and_content_from_config()
+        repo_url, memory_content = _repo_url_and_content_from_config()##===================================
         if not repo_url:
             # 没有 repo_url 说明本轮任务没有绑定 Gitee 仓库。
             # 这种情况下不注入仓库上下文，避免给问答类或系统类任务制造错误背景。
@@ -155,7 +155,7 @@ class ContextInjectionMiddleware(AgentMiddleware):
             )
 
         # 4. 组装面向模型的仓库上下文。这里会自动脱敏 token，防止日志或模型上下文泄露凭证。
-        notice = _build_repo_context_notice(
+        notice = _build_repo_context_notice(##===================================
             owner=repo.owner,
             repo=repo.repo,
             repo_url=repo.clone_url,
@@ -169,3 +169,4 @@ class ContextInjectionMiddleware(AgentMiddleware):
     async def abefore_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
         # DeepAgents 可能走同步或异步运行路径。异步钩子复用同步逻辑，保证两条路径行为一致。
         return self.before_agent(state, runtime)
+

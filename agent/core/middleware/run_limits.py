@@ -9,28 +9,26 @@
 """
 
 from __future__ import annotations
-
 import time
 from dataclasses import dataclass
 from typing import Any
-
 from agent.env_utils import get_env
 
 
 TASK_KIND_DEFAULT_LIMITS: dict[str, tuple[int, int]] = {
     # qa/inspect/sync 通常应快速完成，默认阈值更保守。
     "qa": (60, 600),
-    "inspect": (30, 300),
+    "inspect": (30, 300),##检查
     "sync": (40, 300),
+
     # analysis/planning 需要更多读取和推理，但原则上不应长时间执行写操作。
     "analysis": (120, 900),
     "planning": (120, 900),
     # review 需要读取规则、PR 上下文和 diff，通常比 analysis 略重，但不应进入长时间编码循环。
-    "review": (180, 1200),
+    "review": (180, 1200),##审查
     # coding 任务通常包含读代码、编辑、测试、提交等步骤，需要更高工具调用上限。
     "coding": (300, 1800),
 }
-
 # 兜底默认值：当 task_kind 未命中上方配置时使用。
 DEFAULT_MAX_TOOL_CALLS = 240
 DEFAULT_MAX_SECONDS = 1800
@@ -47,8 +45,9 @@ class AgentRunLimitExceeded(RuntimeError):
 class AgentRunLimits:
     """Agent Loop 的轻量保护阈值。
 
-    open-swe 的模型循环主要由 `ModelCallLimitMiddleware` 保护。LX_AICODING
-    运行在 FastAPI 内，这里只保留更可靠的时间和工具调用上限。不要用 raw event
+    open-swe 的模型循环主要由 `ModelCallLimitMiddleware` 保护。
+    LX_AICODING运行在 FastAPI 内，这里只保留更可靠的--时间和--工具调用上限。
+    不要用 raw event
     里的 `message-start` 统计模型调用次数，因为 DeepAgents 的流式片段、子 Agent
     和中间 assistant message 都可能产生该事件，容易误判。
     """
@@ -85,7 +84,7 @@ class AgentRunLimits:
                 )
             ),
             max_seconds=int(
-                # 秒级限制用于覆盖模型不再调用工具但整体任务仍长时间运行的情况。
+                # 秒级限制--用于覆盖模型不再调用工具--但整体任务仍长时间运行的情况。
                 get_env(
                     f"{env_prefix}MAX_SECONDS",
                     get_env("AGENT_MAX_SECONDS", str(default_seconds)),
@@ -94,17 +93,18 @@ class AgentRunLimits:
             task_kind=normalized_kind,
         )
 
-
+def ________(self):pass
 class AgentRunLimitTracker:
-    """根据 LangGraph 事件流统计本轮 Agent 运行规模。
+    """根据 LangGraph 事件流统计本轮Agent运行规模。
 
     Tracker 是单轮任务级对象，不应跨 thread 或跨 run 复用。
-    每次创建时记录开始时间，并随着事件流推进累计工具调用次数。
+    每次创建时记录开始时间，##===================================
+    并随着事件流推进累计工具调用次数。##===================================
     """
-
     def __init__(self, limits: AgentRunLimits | None = None, task_kind: str | None = None):
         # 调用方可以直接传入 limits，便于测试；正常运行时按 task_kind 从环境变量加载。
-        self.limits = limits or AgentRunLimits.from_env(task_kind)
+        self.limits = limits or AgentRunLimits.from_env(task_kind)##===================================
+        ##
         self.started_at = time.monotonic()
         self.tool_calls = 0
 
@@ -119,18 +119,31 @@ class AgentRunLimitTracker:
         """
 
         # 每个事件到达时都先检查时间，避免没有工具调用的长时间运行绕过限制。
-        self._check_time()
+        self._check_time()##===================================
+
+
         if not isinstance(event, dict):
             return
-
         method = event.get("method")
         if method in {"tool_calls", "tools"}:
-            payload = self._first_payload(event)
+            payload = self._first_payload(event)##===================================
             event_name = payload.get("event") if isinstance(payload, dict) else None
             if method == "tool_calls" or event_name == "tool-started":
                 # 兼容不同事件形态：有的流直接用 tool_calls，有的在 tools 事件里标记 tool-started。
                 self.tool_calls += 1
-                self._check_tool_calls()
+                self._check_tool_calls()##===================================
+
+    def ____(self):
+        pass
+    def _check_time(self) -> None:
+        """检查当前运行耗时是否超过阈值。"""
+
+        elapsed = time.monotonic() - self.started_at
+        if elapsed > self.limits.max_seconds:
+            raise AgentRunLimitExceeded(
+                f"本轮运行已超过 {self.limits.max_seconds} 秒保护上限"
+                f"（任务类型：{self.limits.task_kind}）"
+            )
 
     def _first_payload(self, event: dict[str, Any]) -> Any:
         """从 LangGraph 事件中提取第一个 payload。
@@ -148,16 +161,6 @@ class AgentRunLimitTracker:
         if isinstance(data, list):
             return data[0] if data else None
         return data
-
-    def _check_time(self) -> None:
-        """检查当前运行耗时是否超过阈值。"""
-
-        elapsed = time.monotonic() - self.started_at
-        if elapsed > self.limits.max_seconds:
-            raise AgentRunLimitExceeded(
-                f"本轮运行已超过 {self.limits.max_seconds} 秒保护上限"
-                f"（任务类型：{self.limits.task_kind}）"
-            )
 
     def _check_tool_calls(self) -> None:
         """检查工具调用次数是否超过阈值。"""
