@@ -46,61 +46,7 @@ from langgraph.types import Command
 logger = logging.getLogger("agent.run.middleware.tool_error")
 
 
-def tool_error_result(
-    error: Exception,
-    *,
-    tool_name: str,
-    backend: LocalShellBackend,
-) -> dict[str, Any]:
-    """把未捕获的工具异常转换为结构化结果（字典），供 ToolMessage 序列化。
 
-    本函数不依赖 ToolCallRequest 对象，因此也可以在非中间件场景下单独使用
-    （例如单元测试中验证错误格式，或 stream 处理中直接构造错误返回）。
-
-    返回的字典包含以下字段，模型可以通过读取 content 的 JSON 了解失败原因：
-
-      ok          = False      模型或上层调用方通过 !result["ok"] 判断失败
-      tool        = "read_file"  发生异常的工具名
-      error_type  = "FileNotFoundError"  Python 异常类名，便于程序化判断
-      error       = "文件不存在: ..."    脱敏后的异常文本
-      workspace   = "E:\\ai_workspace"  当前工作区根路径，辅助模型修正路径
-      hint        = "文件不存在。请先调用 ls 确认真实路径..."  中文建议
-
-    异常类型判断逻辑：
-      - WorkspacePermissionError：路径穿越，需改用工作区内虚拟路径
-      - IsADirectoryError：对目录执行了 read/write，需先 ls 查看内容
-      - FileNotFoundError：路径拼写错误或文件已被删除
-      - PermissionError：权限不足或被其他进程占用
-      - TimeoutError：命令或请求超过超时时间
-      - 其他：兜底建议，引导模型先检查目录结构再重试
-    """
-
-    # 进入模型上下文和日志前先脱敏，避免 token、密钥出现在错误文本中。
-    error_text = mask_token(str(error))
-
-    # 按常见异常类型给出可执行的修正建议，帮助模型减少无效重试。
-    # 这些提示不会覆盖原异常信息，而是作为额外辅助字段（hint）提供给模型。
-    if isinstance(error, WorkspacePermissionError):
-        hint = "只能访问工作区内路径。请使用 '/projects' 或 '/projects/仓库名' 这样的虚拟路径。"
-    elif isinstance(error, IsADirectoryError):
-        hint = "当前路径是目录。请先调用 ls（旧工具名 list_files）查看目录内容，再对具体文件调用 read_file 或 write_file。"
-    elif isinstance(error, FileNotFoundError):
-        hint = "文件不存在。请先调用 ls 确认真实路径，再继续操作。"
-    elif isinstance(error, PermissionError):
-        hint = "文件系统拒绝访问。请确认路径不是目录、没有被其他程序占用，并改用工作区内具体文件路径。"
-    elif isinstance(error, TimeoutError):
-        hint = "操作超时。请缩小任务范围，或先用更小的命令检查项目状态。"
-    else:
-        hint = "工具执行失败。请根据 error 字段调整参数，必要时先读取目录、文件或 Git 状态再重试。"
-
-    return {
-        "ok": False,
-        "tool": tool_name,
-        "error_type": error.__class__.__name__,
-        "error": error_text,
-        "workspace": str(backend.workspace.root),
-        "hint": hint,
-    }
 
 
 def _get_tool_call_id(request: ToolCallRequest) -> str | None:
@@ -112,7 +58,7 @@ def _get_tool_call_id(request: ToolCallRequest) -> str | None:
     注意点：
       - request.tool_call 可能是 dict 或 object，取决于 LangChain/LangGraph 版本。
       - 有些非法请求可能没有 id 字段，这里防御式读取，避免错误处理中再次抛错。
-      - 返回 None 时，调用方构造的 ToolMessage 会缺失 tool_call_id，模型仍能
+      - 返回 None 时，调用方构造的 ToolMessage 会缺失 tool_call_id，模型仍能 ##===================================
         看到错误内容，只是 LangGraph 层面的配对可能异常。
     """
 
@@ -165,13 +111,69 @@ def _get_thread_id() -> str | None:
     只是不会记录前端事件（不影响模型正常恢复处理）。
     """
 
-    configurable = get_config().get("configurable", {})
+    configurable = get_config().get("configurable", {})##===================================
     if not isinstance(configurable, dict):
         return None
-    thread_id = configurable.get("thread_id")
+    thread_id = configurable.get("thread_id")##===================================
     return thread_id if isinstance(thread_id, str) and thread_id else None
 
 
+
+def tool_error_result(
+    error: Exception,
+    *,
+    tool_name: str,
+    backend: LocalShellBackend,
+) -> dict[str, Any]:
+    """把未捕获的工具异常转换为结构化结果（字典），供 ToolMessage 序列化。
+
+    本函数不依赖 ToolCallRequest 对象，因此也可以在非中间件场景下单独使用
+    （例如单元测试中验证错误格式，或 stream 处理中直接构造错误返回）。
+
+    返回的字典包含以下字段，模型可以通过读取 content 的 JSON 了解失败原因：
+
+      ok          = False      模型或上层调用方通过 !result["ok"] 判断失败
+      tool        = "read_file"  发生异常的工具名
+      error_type  = "FileNotFoundError"  Python 异常类名，便于程序化判断
+      error       = "文件不存在: ..."    脱敏后的异常文本
+      workspace   = "E:\\ai_workspace"  当前工作区根路径，辅助模型修正路径
+      hint        = "文件不存在。请先调用 ls 确认真实路径..."  中文建议
+
+    异常类型判断逻辑：
+      - WorkspacePermissionError：路径穿越，需改用工作区内虚拟路径
+      - IsADirectoryError：对目录执行了 read/write，需先 ls 查看内容
+      - FileNotFoundError：路径拼写错误或文件已被删除
+      - PermissionError：权限不足或被其他进程占用
+      - TimeoutError：命令或请求超过超时时间
+      - 其他：兜底建议，引导模型先检查目录结构再重试
+    """
+
+    # 进入模型上下文和日志前先脱敏，避免 token、密钥出现在错误文本中。
+    error_text = mask_token(str(error))
+
+    # 按常见异常类型给出可执行的修正建议，帮助模型减少无效重试。
+    # 这些提示不会覆盖原异常信息，而是作为额外辅助字段（hint）提供给模型。
+    if isinstance(error, WorkspacePermissionError):
+        hint = "只能访问工作区内路径。请使用 '/projects' 或 '/projects/仓库名' 这样的虚拟路径。"
+    elif isinstance(error, IsADirectoryError):
+        hint = "当前路径是目录。请先调用 ls（旧工具名 list_files）查看目录内容，再对具体文件调用 read_file 或 write_file。"
+    elif isinstance(error, FileNotFoundError):
+        hint = "文件不存在。请先调用 ls 确认真实路径，再继续操作。"
+    elif isinstance(error, PermissionError):
+        hint = "文件系统拒绝访问。请确认路径不是目录、没有被其他程序占用，并改用工作区内具体文件路径。"
+    elif isinstance(error, TimeoutError):
+        hint = "操作超时。请缩小任务范围，或先用更小的命令检查项目状态。"
+    else:
+        hint = "工具执行失败。请根据 error 字段调整参数，必要时先读取目录、文件或 Git 状态再重试。"
+
+    return {
+        "ok": False,
+        "tool": tool_name,
+        "error_type": error.__class__.__name__,
+        "error": error_text,
+        "workspace": str(backend.workspace.root),##===================================
+        "hint": hint,
+    }
 def _error_tool_message(
     error: Exception,
     *,
@@ -198,11 +200,11 @@ def _error_tool_message(
 
     return ToolMessage(
         content=json.dumps(
-            tool_error_result(error, tool_name=tool_name, backend=backend),
+            tool_error_result(error, tool_name=tool_name, backend=backend),##===================================
             ensure_ascii=False,
         ),
-        tool_call_id=_get_tool_call_id(request),
-        status="error",
+        tool_call_id=_get_tool_call_id(request),##===================================
+        status="error",##===================================
     )
 
 
@@ -324,7 +326,6 @@ class ToolErrorMiddleware(AgentMiddleware):
         # backend 用于在错误结果中返回当前 workspace 路径（backend.workspace.root），
         # 帮助模型了解自己的工作区根目录，从而修正路径参数的写法。
         self.backend = backend
-
     def _record_error(self, request: ToolCallRequest, tool_name: str, error: Exception) -> None:
         """记录工具异常事件到运行事件表。
 
@@ -338,12 +339,12 @@ class ToolErrorMiddleware(AgentMiddleware):
         但异常仍会被正常转换为 ToolMessage 返回。
         """
 
-        thread_id = _get_thread_id()
+        thread_id = _get_thread_id()##===================================
         if not thread_id:
             return
-        kwargs = _get_tool_args(request)
-        _record_original_tool_error(thread_id, tool_name=tool_name, kwargs=kwargs, error=error)
-        record_event(
+        kwargs = _get_tool_args(request)##===================================
+        _record_original_tool_error(thread_id, tool_name=tool_name, kwargs=kwargs, error=error)##========
+        record_event(##========
             thread_id,
             f"tool-error:{tool_name}",
             f"工具失败：{tool_name}",
@@ -358,6 +359,9 @@ class ToolErrorMiddleware(AgentMiddleware):
                 ensure_ascii=False,
             ),
         )
+
+
+
 
     def wrap_tool_call(
         self,
@@ -376,11 +380,11 @@ class ToolErrorMiddleware(AgentMiddleware):
                    也可能是真正的工具函数。
 
         返回：
-          正常情况：handler 返回的 ToolMessage 或 Command。
-          异常情况：status="error" 的 ToolMessage。
+          正常情况：handler 返回的 ToolMessage 或 Command。##===================================##===================================##===================================
+          异常情况：status="error" 的 ToolMessage。##===================================##===================================##===================================
         """
 
-        tool_name = _get_tool_name(request)
+        tool_name = _get_tool_name(request)##===================================
         try:
             return handler(request)
         except Exception as exc:  # noqa: BLE001
@@ -391,8 +395,8 @@ class ToolErrorMiddleware(AgentMiddleware):
                 tool_name, mask_token(str(exc)),
             )
             logger.debug("工具异常调试栈：tool=%s", tool_name, exc_info=True)
-            self._record_error(request, tool_name, exc)
-            return _error_tool_message(exc, request=request, tool_name=tool_name, backend=self.backend)
+            self._record_error(request, tool_name, exc)##========
+            return _error_tool_message(exc, request=request, tool_name=tool_name, backend=self.backend)##===================================
 
     async def awrap_tool_call(
         self,
