@@ -32,7 +32,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from agent.core.checkpoint_history import visible_checkpoint_messages
+from agent.store.checkpoint_history import visible_checkpoint_messages
 from agent.core.runtime import delete_task, get_task, initialize_task_record, list_tasks, run_agent_task
 from agent.env_utils import get_env
 

@@ -35,7 +35,7 @@ from typing import Any
 
 from agent.backends.local_shell import LocalShellBackend
 from agent.backends.permissions import WorkspacePermissionError
-from agent.core.events import record_event
+from agent.store.events import record_event
 from agent.tools.gitee_api import mask_token
 from langchain.agents.middleware.types import AgentMiddleware, AgentState
 from langchain_core.messages import ToolMessage

@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from agent.app import app##===================================
 from agent.backends.permissions import ensure_safe_command
-from agent.core.graph import build_agent##===================================
+from agent.store.graph import build_agent##===================================
 from agent.tools.gitee_api import parse_gitee_repo_url##===================================
 def assert_status(name: str, actual: int, expected: int) -> None:
     if actual != expected:

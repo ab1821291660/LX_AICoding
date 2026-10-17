@@ -8,7 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.backends.local_shell import LocalShellBackend
-from agent.core.memory import load_workspace_memory
+from agent.store.memory import load_workspace_memory
 from agent.core.settings import WORKSPACE_ROOT
 from agent.prompt import get_system_prompt
 

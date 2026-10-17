@@ -119,8 +119,8 @@ def ensure_repo_memory_initialized(
     store.put(
         namespace,
         new_key,
-        create_file_data(build_initial_repo_memory(repo=repo,
-                                                   project_dir=project_dir)),##===================================
+        create_file_data(build_initial_repo_memory(repo=repo,##===================================
+                                                   project_dir=project_dir)),
     )
     return True
 

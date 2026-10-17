@@ -19,7 +19,7 @@ from typing import Any
 import requests
 from langchain_core.tools import tool
 
-from agent.core.events import record_event
+from agent.store.events import record_event
 from agent.tools.gitee_api import mask_token
 from agent.tools.runtime_context import get_runtime_thread_id
 from agent.tools.safe_http import request_with_safe_redirects

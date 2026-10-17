@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agent.core.persistence import make_checkpointer,\
+from agent.store.persistence import make_checkpointer,\
                                    make_langgraph_store
 from agent.core.settings import CHECKPOINT_DB_PATH, LANGGRAPH_STORE_DB_PATH, STORE_DB_PATH
 from agent.core.task_intent import TaskKind##意图分类##===================================

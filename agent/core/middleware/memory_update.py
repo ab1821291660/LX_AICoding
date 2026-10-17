@@ -25,8 +25,8 @@ from typing import Any
 from langchain.agents.middleware.types import AgentMiddleware, AgentState
 from langgraph.config import get_config
 
-from agent.core.graph import get_langgraph_store
-from agent.core.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text ##===================================
+from agent.store.graph import get_langgraph_store
+from agent.store.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text ##===================================
 from agent.tools.gitee_api import mask_token, parse_gitee_repo_url
 
 logger = logging.getLogger("agent.run.middleware.memory_update")

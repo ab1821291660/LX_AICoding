@@ -21,7 +21,7 @@ from typing import Any
 
 from langchain_core.messages import BaseMessage
 
-from agent.core.events import record_event
+from agent.store.events import record_event
 from agent.core.middleware.run_limits import AgentRunLimitExceeded, AgentRunLimitTracker
 from agent.tools.gitee_api import mask_token
 
@@ -522,7 +522,7 @@ def _consume_raw_event_stream(
     thread_id: str,
     run_id: str,
     task_kind: str | None = None,
-    event_sink: StreamEventSink | None = None,
+    event_sink: StreamEventSink | None = None,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
 ) -> tuple[int, int]:
     """按官网 raw protocol event 消费 DeepAgents 输出。
 
@@ -559,9 +559,9 @@ def _consume_raw_event_stream(
     saw_write_todos = False
     limit_tracker = AgentRunLimitTracker(task_kind=task_kind)##===================================##===================================
 
-    for event in stream:
+    for event in stream:##===================================
         # 每个 raw event 都先交给保护器计数。它可以识别模型调用过多、工具循环等异常。
-        limit_tracker.observe_event(event)
+        limit_tracker.observe_event(event)##===================================##===================================
         marker = _text_block_marker_from_event(event)
         if marker is not None:
             marker_kind, _block_index = marker
@@ -573,7 +573,7 @@ def _consume_raw_event_stream(
                         run_id,
                         current_assistant_index or assistant_message_index or 1,
                         current_assistant_text,
-                        event_sink=event_sink,
+                        event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
                     )
                 assistant_message_index += 1
                 current_assistant_index = assistant_message_index
@@ -588,7 +588,7 @@ def _consume_raw_event_stream(
                         run_id,
                         current_assistant_index or assistant_message_index or 1,
                         current_assistant_text,
-                        event_sink=event_sink,
+                        event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
                     )
                 current_assistant_index = 0
                 current_assistant_text = ""
@@ -722,19 +722,19 @@ def run_agent_with_event_stream(##===================================##=========
     run_id: str,
     content: str,
     task_kind: str | None = None,
-    event_sink: StreamEventSink | None = None,
+    event_sink: StreamEventSink | None = None,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
 ) -> dict[str, Any]:
-    """使用官方 v3 event streaming 驱动 DeepAgent。
+    """使用官方 v3 event streaming 驱动 DeepAgent。##===================================
+    这个函数是 FastAPI 版本替代 `langgraph dev` 的核心桥接层：##===================================
 
-    这个函数是 FastAPI 版本替代 `langgraph dev` 的核心桥接层：
     - DeepAgent 继续按官方 `stream_events(version="v3")` 运行。
+
     - 后端把 message、tool_calls、subagents 转成课程项目的 `run_events`。
     - 每一轮运行都把 run_id 写进事件 id，保证 plan、coding、review 多轮内容
       不会在前端互相覆盖或拼接到同一个消息里。
     - 前端仍只消费我们自己的 `/dashboard/api/.../stream`，不用绑定 LangGraph 本地服务。
     """
-
-    stream = agent.stream_events(
+    stream = agent.stream_events(##===================================##===================================
         {"messages": [{"role": "user", "content": content}]},
         version="v3",
         config={"configurable": {"thread_id": thread_id}},
@@ -743,14 +743,14 @@ def run_agent_with_event_stream(##===================================##=========
     # raw protocol events 是当前版本里唯一能拿到 token/chunk 的通道。
     # 这里同时解析 text-delta 和 write_todos 的 tool_call_chunk，保证正文和任务计划都能流式更新。
     try:
-        tool_call_index, subagent_index = _consume_raw_event_stream(
+        tool_call_index, subagent_index = _consume_raw_event_stream(##===================================
             stream=stream,
             thread_id=thread_id,
             run_id=run_id,
             task_kind=task_kind,
-            event_sink=event_sink,
+            event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
         )
-    except AgentRunLimitExceeded as exc:
+    except AgentRunLimitExceeded as exc:##===================================##===================================
         record_event(
             thread_id,
             "agent:run-limit",
@@ -762,6 +762,8 @@ def run_agent_with_event_stream(##===================================##=========
         record_event(thread_id, "model", "调用 deepseek-v4-pro", kind="other", status="error", detail=str(exc))
         raise
 
+
+
     output = stream.output
     record_event(thread_id, "model", "调用 deepseek-v4-pro", kind="other", status="completed")
     logger.info(
@@ -770,4 +772,6 @@ def run_agent_with_event_stream(##===================================##=========
         tool_call_index,
         subagent_index,
     )
-    return {"messages": _messages_from_output(output), "raw_output": output}
+    return {"messages": _messages_from_output(output),##===================================
+            "raw_output": output}
+

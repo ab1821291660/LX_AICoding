@@ -25,8 +25,8 @@ from langchain.agents.middleware.types import AgentMiddleware, AgentState
 from langchain_core.messages import SystemMessage
 from langgraph.config import get_config
 
-from agent.core.graph import get_langgraph_store
-from agent.core.repo_memory import build_repo_memory_namespace, repo_memory_store_key, repo_memory_virtual_path
+from agent.store.graph import get_langgraph_store
+from agent.store.repo_memory import build_repo_memory_namespace, repo_memory_store_key, repo_memory_virtual_path
 from agent.tools.gitee_api import mask_token, parse_gitee_repo_url
 
 logger = logging.getLogger("agent.run.middleware.context_injection")
@@ -123,9 +123,9 @@ class ContextInjectionMiddleware(AgentMiddleware):
     state_schema = AgentState
 
     def before_agent(self, state: AgentState, runtime: Any) -> dict[str, Any] | None:
-        # 1. 从 LangGraph RunnableConfig 读取当前仓库地址和预加载的仓库记忆。
+        # 1. 从 LangGraph RunnableConfig 读取当前仓库地址和预加载的仓库记忆。get_config
         #    这里不直接使用 runtime，是因为当前 LangGraph Runtime 不暴露 config 字段。
-        repo_url, memory_content = _repo_url_and_content_from_config()##===================================
+        repo_url, memory_content = _repo_url_and_content_from_config()##优先取get_config中预缓存的[见server.get_agent]##===================================##===================================
         if not repo_url:
             # 没有 repo_url 说明本轮任务没有绑定 Gitee 仓库。
             # 这种情况下不注入仓库上下文，避免给问答类或系统类任务制造错误背景。
@@ -142,9 +142,10 @@ class ContextInjectionMiddleware(AgentMiddleware):
             #    正常路径中 runtime.py 会提前初始化并缓存记忆；这里保留兜底逻辑，
             #    是为了避免未来新增运行入口时忘记把 `_repo_memory_content` 放入 config。
             namespace = build_repo_memory_namespace(repo.owner, repo.repo)# ("lx-aicoding", "repo-memory", owner.lower(), repo.lower())
-            item = get_langgraph_store().get(namespace,
+            item = get_langgraph_store().get(namespace,##取不到从langgraph_store中查询##===================================##===================================
                                              repo_memory_store_key(repo.owner, repo.repo))##return f"/{owner}/{repo}.md"
             memory_content = str(item.value.get("content") or "").strip() if item is not None else None
+
 
 
 

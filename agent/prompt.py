@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agent.core.memory import load_workspace_memory
+from agent.store.memory import load_workspace_memory
 from agent.core.task_intent import TaskKind
 
 
@@ -77,6 +77,8 @@ Gitee 仓库工作方式：
 """
 
 
+
+def ________上面基础__下面1个写coding__6个只读():pass
 CODING_PROMPT = """当前任务类型：开发实现。
 
 允许目标：
@@ -137,6 +139,9 @@ READ_ONLY_PROMPTS: dict[TaskKind, str] = {
 5. 如果确实需要说明代码结构，只描述修改点和核心逻辑，例如“新增 Department 模型，字段包括 id/name/description/created_at”，不要贴完整实现。
 6. 除非用户明确要求“给出代码示例”或“把代码写出来”，否则 Markdown 代码块总长度不要超过 10 行。
 """,
+
+
+
     "qa": """当前任务类型：项目问答。
 只读要求：
 1. 可以读取必要文件来核实答案。
@@ -172,7 +177,7 @@ READ_ONLY_PROMPTS: dict[TaskKind, str] = {
 
 
 
-
+def ________综合区分____base加7个类别__1个写coding__6个只读():pass
 def get_system_prompt(task_kind: TaskKind = "coding") -> str:
     """根据任务类型生成系统提示词。"""
     workspace_memory = load_workspace_memory()##memoryBAK读取本地工作区memory_workspace.md事实记忆 ##===================================
@@ -187,9 +192,11 @@ SYSTEM_PROMPT = get_system_prompt("coding")##===================================
 
 
 
+def ________没用到():pass
 REVIEWER_PROMPT = """你是 LX-AICODING 的代码审查智能体。
 你只负责审查，不允许修改代码。
 只关注本次 diff 或用户指定 PR 中可能引入的真实问题，不要提出纯风格建议。
 每个 finding 必须说明文件、行号、严重程度、标题和具体风险。
 所有面向用户的自然语言输出必须使用中文。
 """
+

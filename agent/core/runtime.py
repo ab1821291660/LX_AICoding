@@ -25,11 +25,11 @@ from typing import Any
 
 from agent.backends.local_shell import LocalShellBackend
 from agent.backends.workspace import Workspace
-from agent.core.events import record_event
-from agent.core.graph import get_checkpointer, get_langgraph_store, get_store
-from agent.core.checkpoint_history import visible_checkpoint_messages
-from agent.core.repo_memory import ensure_repo_memory_initialized, repo_project_dir
-from agent.core.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text
+from agent.store.events import record_event
+from agent.store.graph import get_checkpointer, get_langgraph_store, get_store
+from agent.store.checkpoint_history import visible_checkpoint_messages
+from agent.store.repo_memory import ensure_repo_memory_initialized, repo_project_dir
+from agent.store.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text
 from agent.core.settings import PROJECTS_DIR, WORKSPACE_ROOT
 from agent.core.streaming_runtime import run_agent_with_event_stream
 from agent.core.task_intent import classify_task_kind, is_pull_only_task, is_workspace_listing_task
@@ -40,41 +40,7 @@ logger = logging.getLogger("agent.run.runtime") ##==============================
 
 # event_sink 是 FastAPI SSE 层传进来的回调。
 # runtime 自己不关心 HTTP 细节，只把“有新内容了”通知给上层。
-RuntimeEventSink = Callable[[str, dict[str, Any]], None]
-
-
-def _build_agent_for_runtime(
-    *,
-    thread_id: str,
-    task_kind: str,
-    repo_url: str | None = None,
-):
-    """为 FastAPI runtime 构造 open-swe 风格的 Agent config。
-
-    open-swe 由 LangGraph Server 注入 `RunnableConfig`。课程版不用 ##===================================##===================================
-    langgraph dev，所以在这里显式组装 config，再交给 `agent.server.get_agent`。 ##===================================##===================================
-
-    `thread_id` 用于绑定 LangGraph checkpoint、Store 业务记录和前端事件流。
-    `task_kind` 会影响系统提示词、工具权限、中间件行为 和运行保护阈值。
-    `repo_url` 会继续向下传给 Agent 工厂，用于初始化仓库映射、仓库记忆 和运行上下文。
-
-    注意：这里每次运行都会重新取得一个 Agent runnable。真正的对话状态不靠这个
-    Python 对象长期驻留，而是靠 checkpoint 和 StoreBackend 持久化。##===================================##===================================
-    """
-    configurable: dict[str, Any] = {
-        # thread_id 是 checkpointer 的主键，也是前端当前会话的唯一标识。
-        "thread_id": thread_id,
-        # task_kind 会一路传到 agent.server.get_agent，用来选择系统提示词和运行规则。
-        "task_kind": task_kind,
-        # 这个标记用于区分“真实执行”和“框架探测图结构”。
-        "__is_for_execution__": True,
-    }
-    if repo_url:
-        # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
-        configurable["repo_url"] = repo_url
-    return get_agent({"configurable": configurable})##===================================##===================================##===================================##===================================
-
-
+RuntimeEventSink = Callable[[str, dict[str, Any]], None] ##===================================##===================================
 
 
 
@@ -510,7 +476,7 @@ def run_plan_response_task(
     record_event(thread_id, "agent", "构建方案生成 Agent", status="in_progress")
     # 方案任务也使用 DeepAgent，是因为它需要读取仓库结构、测试方式、关键文件等上下文。
     # 但 task_kind 固定为 planning，中间件和工具权限会保持只读。
-    agent = _build_agent_for_runtime(thread_id=thread_id, task_kind="planning", repo_url=repo.clone_url)
+    agent = _build_agent_for_runtime(thread_id=thread_id, task_kind="planning", repo_url=repo.clone_url)##===================================
     record_event(thread_id, "agent", "构建方案生成 Agent", status="completed")
 
     try:
@@ -684,13 +650,12 @@ def _ensure_repo_memory_for_repo(repo: Any, project_dir: str) -> None:
     """根据固定项目目录--初始化仓库级长期记忆文件。
 
     记忆正文通过 DeepAgents StoreBackend 写入 LangGraph Store，不再额外建立
-    SQLite 索引表。已有记忆不会被覆盖。
-
-    仓库记忆的初始化只做“没有则创建”的动作。后续 coding、planning、review
-    任务完成后的经验总结，由 repo_memory_update.py 负责结构化写回。
+    SQLite 索引表。已有记忆不会被覆盖。##===================================
+    仓库记忆的初始化只做“没有则创建”的动作。##===================================
+    后续 coding、planning、review任务完成后的经验总结，由 repo_memory_update.py 负责结构化写回。##===================================
     """
 
-    created = ensure_repo_memory_initialized(##===================================
+    created = ensure_repo_memory_initialized(##初始化仓库级长期记忆文件##===================================##===================================
         store=get_langgraph_store(),
         repo=repo,
         project_dir=project_dir.replace("\\", "/"),###f"projects/{repo.repo}"
@@ -753,13 +718,13 @@ def run_pull_only_task(*, repo_url: str, prompt: str, thread_id: str | None = No
     store.record_run(run_id=run_id, thread_id=thread_id, status="running")##========
     workspace = Workspace(WORKSPACE_ROOT)
     backend = LocalShellBackend(workspace)
-    repo = parse_gitee_repo_url(repo_url)
-    project_dir = repo_project_dir(repo)#f"projects/{repo.repo}"
-    _ensure_repo_memory_for_repo(repo, project_dir)##===================================
-    relative_dir = Path(project_dir)
-    target = workspace.resolve(relative_dir)##===================================
-    clone_url = repo.clone_url
+    repo = parse_gitee_repo_url(repo_url)##===================================
+    project_dir = repo_project_dir(repo)#f"projects/{repo.repo}"##===================================
+    _ensure_repo_memory_for_repo(repo, project_dir)##初始化仓库级长期记忆文件##===================================##===================================
 
+    relative_dir = Path(project_dir)
+    target = workspace.resolve(relative_dir)
+    clone_url = repo.clone_url
     try:
         logger.info("开始执行 pull-only 任务：thread_id=%s repo=%s/%s", thread_id, repo.owner, repo.repo)
         record_event(thread_id, "workspace", "准备本地工作区", status="in_progress")
@@ -828,7 +793,41 @@ def run_pull_only_task(*, repo_url: str, prompt: str, thread_id: str | None = No
 
 
 
-def ________():pass
+def ________主入口__编排_3类路由():pass
+def _build_agent_for_runtime(
+    *,
+    thread_id: str,
+    task_kind: str,
+    repo_url: str | None = None,
+):
+    """为 FastAPI runtime 构造 open-swe 风格的 Agent config。
+
+    open-swe 由 LangGraph Server 注入 `RunnableConfig`。课程版不用 ##===================================##===================================
+    langgraph dev，所以在这里显式组装 config，再交给 `agent.server.get_agent`。 ##===================================##===================================
+
+    `thread_id` 用于绑定 LangGraph checkpoint、Store 业务记录和前端事件流。
+    `task_kind` 会影响系统提示词、工具权限、中间件行为 和运行保护阈值。
+    `repo_url` 会继续向下传给 Agent 工厂，用于初始化仓库映射、仓库记忆 和运行上下文。
+
+    注意：这里每次运行都会重新取得一个 Agent runnable。真正的对话状态不靠这个
+    Python 对象长期驻留，而是靠 checkpoint 和 StoreBackend 持久化。##===================================##===================================
+    """
+    configurable: dict[str, Any] = {
+        # thread_id 是 checkpointer 的主键，也是前端当前会话的唯一标识。
+        "thread_id": thread_id,
+        # task_kind 会一路传到 agent.server.get_agent，用来选择系统提示词和运行规则。
+        "task_kind": task_kind,
+        # 这个标记用于区分“真实执行”和“框架探测图结构”。
+        "__is_for_execution__": True,
+    }
+    if repo_url:
+        # 仓库地址在 Agent 工厂中会被用于初始化本地仓库上下文、和仓库记忆。
+        configurable["repo_url"] = repo_url
+    return get_agent({"configurable": configurable})##===================================##===================================##===================================##===================================
+
+
+
+
 def run_agent_task(##===================================##===================================##===================================##===================================
     *,
     repo_url: str,
@@ -865,34 +864,45 @@ def run_agent_task(##===================================##======================
     和仓库级长期记忆。##===================================
     注意：Store 不作为正常历史恢复来源。用户消息和 assistant 正文以 checkpoint 为准。
     """
+    ##step1##===================================##===================================##===================================##===================================
+    ##step1##===================================##===================================##===================================##===================================
+    ##step1##===================================##===================================##===================================##===================================
+    ##step1##===================================##===================================##===================================##===================================
     # 两个直达分支都不需要 LLM，能显著减少模型调用和等待时间。
     if is_workspace_listing_task(prompt):##===================================
         return run_workspace_listing_task(repo_url=repo_url, prompt=prompt, thread_id=thread_id)
+
     if is_pull_only_task(prompt):##===================================
         return run_pull_only_task(repo_url=repo_url, prompt=prompt, thread_id=thread_id)
 
 
 
 
+    ##step2##===================================##===================================##===================================##===================================
+    ##step2##===================================##===================================##===================================##===================================
+    ##step2##===================================##===================================##===================================##===================================
+    ##step2##===================================##===================================##===================================##===================================
     # 第一层用户意图识别。这里只得到粗粒度 task_kind，后续还会经过方案确认、
     # 只读权限
     # 和 coding 前置方案等 runtime 策略兜底。
-    task_kind = classify_task_kind(prompt)##===================================##===================================
+    task_kind = classify_task_kind(prompt)##===================================##===================================##===================================##===================================
 
 
 
 
-    # 新任务创建新 thread；继续对话时使用前端已有 thread_id，确保 checkpoint 接上历史。
+    # 新任务创建新 thread；
+    # 继续对话时使用前端已有 thread_id，确保 checkpoint 接上历史。
     thread_id = thread_id or str(uuid.uuid4())
     store = get_store()##Store保存的是平台业务数据  ##========
     existing_thread = store.get_thread(thread_id)##========  ##===================================##===================================
     ##
-    approved_plan_text: str | None = None
     # display_prompt 是本轮用户真实输入，用于前端展示；
     # coding_prompt 是传给 Agent 的执行目标。
     # 在“确认实施”场景下，二者不能混用：用户真实输入可能只有“确认”，而执行目标应是上一轮方案。
     display_prompt = prompt
     coding_prompt = prompt
+    approved_plan_text: str | None = None#3完整计划的内容技术方案
+
 
     # plan_message = return {
     #     "message_id": message.get("message_id") or f"checkpoint-plan:{thread_id}",
@@ -906,7 +916,7 @@ def run_agent_task(##===================================##======================
     #         "source": "checkpoint",  ##===================================
     #     },
     # }
-    if existing_thread and _is_approval_prompt(prompt):##确认实施##===================================
+    if existing_thread and _is_approval_prompt(prompt):##确认实施##===================================##===================================##===================================##===================================
         # 讲课重点：
         # “确认实施”不能直接等价于“执行当前这几个字”。
         # 必须先回到当前 thread 的历史消息里，找到最近一条仍在等待确认的技术方案；
@@ -916,51 +926,56 @@ def run_agent_task(##===================================##======================
             metadata = _message_metadata(plan_message)##===================================
             approved_plan_text = str(plan_message.get("content") or "")
             coding_prompt = str(
-                metadata.get("source_prompt")##===================================
-                or _latest_non_approval_user_prompt(thread_id, existing_thread.get("user_prompt") or prompt)
+                metadata.get("source_prompt")
+                or _latest_non_approval_user_prompt(thread_id, existing_thread.get("user_prompt") or prompt)##===================================
             )
-            task_kind = "coding"
-    elif existing_thread:##不是确认实施--------#方案修订仍然是 planning，只重新生成完整新版方案，不进入 coding。--------
+            task_kind = "coding"##===================================
+    elif existing_thread:##不是确认实施----修改/重新生成/补充方案--#方案修订仍然是 planning，只重新生成完整新版方案，不进入 coding。##===================================##===================================##===================================##===================================
         # 如果当前会话已经有一版等待确认的技术方案，而用户没有确认实施，
         # 只有用户明确说“修改/重新生成/补充方案”时，才把这轮输入视为方案修订。
         # 普通问答、代码审查、查看记忆文件等只读任务不能被历史方案劫持。 ##===================================
         plan_message = _latest_confirmable_plan_message(thread_id) \
-                       if _is_plan_revision_prompt(prompt)  else None ##===================================
+                       if _is_plan_revision_prompt(prompt)  else None##修改/重新生成/补充方案 ##===================================
         if plan_message is not None and prompt.strip():
             ## planning
             return run_plan_response_task(#方案修订仍然是planning，只重新生成完整新版方案，不进入coding。##===================================
-                repo_url=repo_url,
-                prompt=_plan_source_prompt(plan_message, _latest_non_approval_user_prompt(thread_id, prompt)),
-                thread_id=thread_id,
-                previous_plan_message=plan_message,
-                revision_prompt=prompt,
-                event_sink=event_sink,
-            )
+                                            repo_url=repo_url,
+                                            prompt=_plan_source_prompt(plan_message, _latest_non_approval_user_prompt(thread_id, prompt)),
+                                            thread_id=thread_id,
+
+                                            previous_plan_message=plan_message,
+                                            revision_prompt=prompt,
+
+                                            event_sink=event_sink,## #把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
+                                        )
     if existing_thread and \
             approved_plan_text is None \
             and _is_approval_prompt(prompt):##确认实施
         # 没有可确认的技术方案时，，把“确认”当作普通问题处理，避免误执行旧任务。
-        task_kind = classify_task_kind(prompt)##===================================##===================================
+        task_kind = classify_task_kind(prompt)##===================================##===================================##===================================##===================================
+
 
     if approved_plan_text is not None:
         task_kind = "coding"
     ##planning
     if task_kind == "coding" and approved_plan_text is None:
         # 这是本项目“人在回路”的核心控制点：
-        # 只要是 coding 请求，且没有找到用户确认过的方案，就先转入 planning。
-        # 这个判断在 runtime 层完成，而不是只写在 Prompt 里，目的是把“先方案、再实施”
-        # 做成确定性的产品流程，降低 Agent 首轮直接误改代码的风险。
+        # 只要是 coding 请求，且没有找到用户确认过的方案，就先转入 planning。##===================================
+        # 这个判断在 runtime 层完成，而不是只写在 Prompt 里，目的是把“先方案、再实施” 做成确定性的产品流程，降低 Agent 首轮直接误改代码的风险。
         return run_plan_response_task(##===================================
-            repo_url=repo_url,
-            prompt=prompt,
-            thread_id=thread_id,
-            event_sink=event_sink)
+                                        repo_url=repo_url,
+                                        prompt=prompt,
+                                        thread_id=thread_id,
+                                        event_sink=event_sink)## #把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
 
 
 
 
 
-
+    ##step3##===================================##===================================##===================================##===================================
+    ##step3##===================================##===================================##===================================##===================================
+    ##step3##===================================##===================================##===================================##===================================
+    ##step3##===================================##===================================##===================================##===================================
     # 到这里说明本轮不是直达任务，##===================================##===================================
     # 也不是“未确认的coding需求”。##===================================##===================================
     # 接下来进入通用 Agent 执行分支：
@@ -1013,7 +1028,7 @@ def run_agent_task(##===================================##======================
         logger.info("开始通过官方事件流调用 Agent：thread_id=%s", thread_id)
         # runtime 只负责“决定跑什么”和“最终状态落库”。
         # 运行过程中的 text delta、write_todos、tool call、subagent 事件解析，# 统一交给 streaming_runtime.py，避免调度层和事件解析层混在一起。
-        result = run_agent_with_event_stream(##===================================##===================================
+        result = run_agent_with_event_stream(##构造user输入----{"messages": [{"role": "user", "content": content}]},##===================================##===================================
             agent=agent,
             thread_id=thread_id,
             run_id=run_id,
@@ -1025,7 +1040,7 @@ def run_agent_task(##===================================##======================
                                 approved_plan=approved_plan_text,
                             ),
             task_kind=task_kind,
-            event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================
+            event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
         )
         store.finish_open_run_events(thread_id, status="completed")##========
         store.update_thread_status(thread_id, "completed")##========

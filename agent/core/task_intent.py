@@ -49,6 +49,7 @@ def is_read_only_task(task_kind: TaskKind) -> bool:
                         ##"sync", 少了这个
 
 
+
 def ________(self):pass
 class IntentClassification(BaseModel):
     """模型意图分类的结构化输出。
@@ -87,6 +88,7 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+def ________step1前置规则(self):pass
 def is_pull_only_task(prompt: str) -> bool:
     """判断用户是否只想同步远程仓库代码。
 
@@ -112,7 +114,7 @@ def is_pull_only_task(prompt: str) -> bool:
     ]
     return _contains_any(normalized, pull_keywords) and not _contains_any(normalized, change_keywords)
 
-def ________step1前置规则(self):pass
+
 def is_workspace_listing_task(prompt: str) -> bool:
     """判断用户是否只是询问本地工作区有哪些项目。
 
@@ -389,7 +391,8 @@ def _apply_security_guard(prompt: str, predicted: TaskKind) -> TaskKind:
         return "planning"
     return predicted
 
-def ________classify_task_kind(self):pass
+
+def ________主入口classify_task_kind(self):pass
 def classify_task_kind(prompt: str) -> TaskKind:
     """按用户意图选择 Agent 工作模式。
 

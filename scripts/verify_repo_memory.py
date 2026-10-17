@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from langgraph.store.sqlite import SqliteStore
 
-from agent.core.repo_memory import (
+from agent.store.repo_memory import (
     build_repo_memory_namespace,
     create_repo_backend,
     ensure_repo_memory_initialized,
@@ -20,7 +20,7 @@ from agent.core.repo_memory import (
     _LEGACY_REPO_MEMORY_PATH,
     _LEGACY_STORE_KEY,
 )
-from agent.core.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text
+from agent.store.repo_memory_update import RepoMemoryUpdate, update_repo_memory_from_text
 from agent.core.middleware import ContextInjectionMiddleware, MemoryUpdateMiddleware
 from agent.tools.gitee_api import parse_gitee_repo_url
 from langchain_core.messages import AIMessage, HumanMessage

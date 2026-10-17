@@ -6,7 +6,7 @@ from hashlib import sha1
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from agent.core.graph import get_checkpointer##===================================
+from agent.store.graph import get_checkpointer##===================================
 
 logger = logging.getLogger("agent.checkpoint_history")
 

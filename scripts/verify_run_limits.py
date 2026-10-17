@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agent.core.graph import get_store
+from agent.store.graph import get_store
 from agent.core.middleware import run_limits
 from agent.core.middleware.run_limits import AgentRunLimitExceeded, AgentRunLimits
 from agent.core.streaming_runtime import run_agent_with_event_stream

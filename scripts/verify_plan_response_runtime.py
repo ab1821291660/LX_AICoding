@@ -9,7 +9,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.core import runtime
-from agent.core.graph import get_store
+from agent.store.graph import get_store
 
 
 class FakeAgent:

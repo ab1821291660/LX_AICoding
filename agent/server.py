@@ -23,9 +23,9 @@ from langchain_core.language_models import BaseChatModel
 from langgraph.graph.state import RunnableConfig
 from langgraph.store.base import BaseStore
 
-from agent.backends.local_shell import LocalShellBackend
-from agent.backends.workspace import Workspace
-from agent.core.graph import get_langgraph_store
+
+from agent.backends.local_shell import LocalShellBackend##===================================
+from agent.store.graph import get_langgraph_store##===================================
 from agent.core.middleware import (
     ContextInjectionMiddleware,
     MessageSanitizeMiddleware,
@@ -33,16 +33,15 @@ from agent.core.middleware import (
     ToolErrorMiddleware,
 )
 from agent.core.model import make_main_model
-from agent.core.repo_memory import (
+from agent.store.repo_memory import (
     build_repo_memory_namespace,
     ensure_repo_memory_initialized,
     repo_project_dir,
     repo_memory_store_key,
     repo_memory_virtual_path,
 )
-from agent.core.settings import WORKSPACE_ROOT
-from agent.core.task_intent import TaskKind
-from agent.prompt import get_system_prompt
+from agent.core.task_intent import TaskKind##===================================
+from agent.prompt import get_system_prompt##===================================
 from agent.tools import (
     add_review_finding,
     fetch_url,
@@ -78,7 +77,7 @@ _BACKENDS: dict[str, LocalShellBackend] = {}##==================================
 def graph_loaded_for_execution(config: RunnableConfig) -> bool:
     """判断当前 Agent 是否用于真实执行。
 
-    之前项目 在 LangGraph Server 中会区分“图结构探测”和“真实运行”。
+    之前项目 在 LangGraph Server 中会区分“图结构探测”和“真实运行”。##===================================
     LX_AICODING 不使用 langgraph dev，但保留这个判断，可以让课程代码结构
     尽量贴近 之前项目，并避免没有 thread_id 时误创建完整工具链。
     """
@@ -94,7 +93,9 @@ def _task_kind_from_config(configurable: dict[str, Any]) -> TaskKind:
     return "coding"
 
 
-def ____准备backend__混合CompositeBackend记忆():pass
+
+
+def ____准备backend__返回混合CompositeBackend__记忆走store__基础函数走sandbox():pass
 def ensure_backend_for_thread(thread_id: str) -> LocalShellBackend:
     """获取或创建绑定到 thread 的本地 backend。
 
@@ -135,7 +136,7 @@ def _prepare_repo_backend_context(
     project_dir = repo_project_dir(repo)
     langgraph_store = get_langgraph_store()
     # 初始化只在记忆不存在时写入模板；已有记忆不会被覆盖。
-    ensure_repo_memory_initialized(##===================================
+    ensure_repo_memory_initialized(##===================================##===================================
         store=langgraph_store,
         repo=repo,
         project_dir=project_dir,
@@ -439,7 +440,7 @@ def get_agent(config: RunnableConfig):
     # 这里每次创建 Agent 都重新创建 model wrapper，但模型调用状态不依赖该对象保存。
     main_model = make_main_model()##===================================
     subagent_model = make_main_model()##===================================
-    from agent.core.graph import get_checkpointer##===================================
+    from agent.store.graph import get_checkpointer##===================================
     langgraph_store = get_langgraph_store()#这里的store专门服务 `/memories/...` 长期记忆文件##===================================
     logger.info("返回带 backend 的 Agent：thread_id=%s task_kind=%s", thread_id, task_kind)
     # 这里是整套 Agent 能力的装配点。讲课时建议从这些参数逐个展开：

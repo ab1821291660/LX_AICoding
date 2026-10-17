@@ -22,7 +22,7 @@ from pathlib import PureWindowsPath
 from typing import Any
 
 from agent.backends.local_shell import LocalShellBackend##===================================
-from agent.core.events import record_event
+from agent.store.events import record_event
 from agent.tools.gitee_api import mask_token, normalize_gitee_repo_url
 
 from langchain.agents.middleware.types import AgentMiddleware, AgentState

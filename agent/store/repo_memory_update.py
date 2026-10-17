@@ -8,7 +8,7 @@ from typing import Any
 
 from langgraph.store.base import BaseStore
 
-from agent.core.repo_memory import build_repo_memory_namespace, get_repo_memory_item, repo_memory_store_key
+from agent.store.repo_memory import build_repo_memory_namespace, get_repo_memory_item, repo_memory_store_key
 from agent.tools.gitee_api import GiteeRepo, mask_token
 
 logger = logging.getLogger("agent.run.repo_memory_update")

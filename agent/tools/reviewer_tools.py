@@ -13,7 +13,7 @@ from typing import Any
 from langchain_core.tools import tool
 
 from agent.backends.local_shell import LocalShellBackend
-from agent.core.graph import get_store
+from agent.store.graph import get_store
 from agent.reviewer_diff import get_local_diff_summary, parse_unified_diff, validate_finding_location
 from agent.tools.runtime_context import get_runtime_thread_id
 

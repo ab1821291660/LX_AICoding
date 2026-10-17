@@ -8,7 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from agent.api import dashboard_routes
-from agent.core.checkpoint_history import _extract_user_prompt
+from agent.store.checkpoint_history import _extract_user_prompt
 
 
 def _visible_text(messages: list[dict]) -> str:

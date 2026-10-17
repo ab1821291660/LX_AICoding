@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from agent.core.graph import build_agent
+from agent.store.graph import build_agent
 from agent.core.settings import SKILLS_DIR
 from agent.prompt import get_system_prompt
 

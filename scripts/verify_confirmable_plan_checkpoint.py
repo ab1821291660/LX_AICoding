@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from agent.core.graph import get_store
+from agent.store.graph import get_store
 from agent.core.runtime import (
     _is_approval_prompt,
     _latest_confirmable_plan_message,

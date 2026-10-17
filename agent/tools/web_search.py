@@ -16,7 +16,7 @@ from typing import Any
 
 from langchain_core.tools import tool
 
-from agent.core.events import record_event
+from agent.store.events import record_event
 from agent.env_utils import require_env
 from agent.tools.gitee_api import mask_token
 from agent.tools.runtime_context import get_runtime_thread_id
