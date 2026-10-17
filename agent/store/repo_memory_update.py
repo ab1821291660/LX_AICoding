@@ -282,7 +282,9 @@ def update_repo_memory_from_text(
     current = str(item.value.get("content") or "")
 
 
+
     updated = build_updated_repo_memory(current, update)##===================================##===================================
+
 
 
     if updated == current:

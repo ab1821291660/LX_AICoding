@@ -29,6 +29,8 @@ TaskKind = Literal["coding",
                    "analysis", "planning", "qa", "sync", "inspect", "review"]##===================================##===================================
 _ALLOWED_TASK_KINDS: set[str] = {"coding",                             ##检查      ##审查
                                  "analysis", "planning", "qa", "sync", "inspect", "review"}
+# ##见def _classify_by_model(prompt: str) -> TaskKind:
+#     """调用模型完成第一层用户意图分类。"""
 # ##system_prompt = """你是 AI Coding 系统的第一层用户意图分类器。
 # 你只负责分类，不要回答用户问题，不要生成方案，不要写代码。
 #

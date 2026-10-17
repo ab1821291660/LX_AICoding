@@ -28,7 +28,7 @@ def make_main_model() -> BaseChatModel:
     """
 
     return init_chat_model(
-        model=get_env("MAIN_MODEL", "deepseek-v4-pro"),
+        model=get_env("MAIN_MODEL", "deepseek-v4-pro"),##===================================
         model_provider="openai",
         temperature=1.1,
         api_key=require_env("DEEPSEEK_API_KEY"),
@@ -56,7 +56,7 @@ def make_intent_model() -> BaseChatModel:
     """
 
     return init_chat_model(
-        model=get_env("INTENT_MODEL", get_env("MAIN_MODEL", "deepseek-v4-pro")),
+        model=get_env("INTENT_MODEL", get_env("MAIN_MODEL", "deepseek-v4-pro")),##===================================
         model_provider="openai",
         temperature=float(get_env("INTENT_MODEL_TEMPERATURE", "0")),
         api_key=require_env("DEEPSEEK_API_KEY"),

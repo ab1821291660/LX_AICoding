@@ -547,7 +547,6 @@ def _consume_raw_event_stream(
     write_todo_last_payload_by_call	避免重复发送相同 todo
     saw_write_todos	本轮是否看到了任务计划工具
     '''
-
     tool_call_index = 0
     subagent_index = 0
     assistant_message_index = 0
@@ -558,6 +557,7 @@ def _consume_raw_event_stream(
     write_todo_last_payload_by_call: dict[str, str] = {}
     saw_write_todos = False
     limit_tracker = AgentRunLimitTracker(task_kind=task_kind)##===================================##===================================
+
 
     for event in stream:##===================================
         # 每个 raw event 都先交给保护器计数。它可以识别模型调用过多、工具循环等异常。
@@ -747,7 +747,7 @@ def run_agent_with_event_stream(##===================================##=========
             stream=stream,
             thread_id=thread_id,
             run_id=run_id,
-            task_kind=task_kind,
+            task_kind=task_kind,##===================================
             event_sink=event_sink,#把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。##===================================##===================================
         )
     except AgentRunLimitExceeded as exc:##===================================##===================================
