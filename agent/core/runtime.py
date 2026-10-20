@@ -579,7 +579,7 @@ def initialize_task_record(
     thread_id = thread_id or str(uuid.uuid4())
     repo = parse_gitee_repo_url(repo_url)
     get_store().upsert_thread(##========
-        thread_id=thread_id,
+        thread_id=thread_id,##===================================
         title=prompt[:80] or f"Gitee: {repo.owner}/{repo.repo}",
         user_prompt=prompt,
         repo_url=repo.clone_url,
@@ -1141,11 +1141,11 @@ def delete_task(thread_id: str) -> bool:
     不从 Store 读正文，但删除会话时必须两边都清理，避免残留上下文影响后续同名任务。
     """
 
-    deleted = get_store().delete_thread(thread_id)##===================================
+    deleted = get_store().delete_thread(thread_id)##- 面向页面和业务查询##===================================
     if not deleted:
         return False
     try:
-        get_checkpointer().delete_thread(thread_id)##===================================
+        get_checkpointer().delete_thread(thread_id)##checkpointer短期历史+state##===================================
     except Exception:
         # 删除业务会话已经成功，checkpoint 清理失败不应该让前端误以为删除失败；
         # 记录日志后由后续维护脚本处理残留 checkpoint。

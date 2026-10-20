@@ -90,6 +90,9 @@ npm -v
 npm config set registry https://registry.npmmirror.com
 ```
 
+
+
+
 ## 4. 准备 Python Conda 环境
 
 如果服务器已经安装 Conda，推荐直接创建独立环境：
@@ -121,7 +124,10 @@ pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
 pip config set global.trusted-host mirrors.aliyun.com
 ```
 
-## 5. 上传项目代码
+
+
+
+## 5. ----上传项目代码
 
 推荐把本地项目上传到：
 
@@ -210,7 +216,10 @@ sed -i '1s/^\xEF\xBB\xBF//' .env
 sed -i 's/\r$//' .env
 ```
 
-## 7. 安装后端依赖
+
+
+
+## 7. ----安装后端依赖
 
 进入项目目录并激活 Conda：
 
@@ -282,14 +291,14 @@ python -c "import fastapi, uvicorn, deepagents, langgraph; print('ok')"
 项目内 skill 需要同步到工作区：
 
 ```bash
-cd /opt/lx-aicoding/app
-python scripts/sync_skills.py
+cd /opt/lx-aicoding/app ##===================================
+python scripts/sync_skills.py ##===================================
 ```
 
 确认：
 
 ```bash
-ls -lah /opt/lx-aicoding/workspace/skills
+ls -lah /opt/lx-aicoding/workspace/skills ##===================================
 ```
 
 应该能看到：
@@ -300,7 +309,7 @@ code-review
 repo-bootstrap-analysis
 ```
 
-## 9. 安装前端依赖
+## 9. ----安装前端依赖
 
 进入前端目录：
 
@@ -345,14 +354,14 @@ npm run build
 
 然后用 Nginx 托管 `ui/dist`。
 
-## 10. 部署自检
+## 10. ----部署自检
 
 执行：
 
 ```bash
-cd /opt/lx-aicoding/app
+cd /opt/lx-aicoding/app ##===================================
 conda activate aicoding
-python scripts/verify_linux_deployment.py
+python scripts/verify_linux_deployment.py ##===================================
 ```
 
 它会检查：

@@ -43,16 +43,16 @@ from agent.store.repo_memory import (
 from agent.core.task_intent import TaskKind##===================================
 from agent.prompt import get_system_prompt##===================================
 from agent.tools import (
-    add_review_finding,
-    fetch_url,
+    add_review_finding,##===================================
+    fetch_url,#
     get_gitee_pull_request_context,
-    get_review_diff_summary,
-    list_review_findings,
-    load_default_review_rules,
+    get_review_diff_summary,##===================================
+    list_review_findings,##===================================
+    load_default_review_rules,##===================================
     open_gitee_pull_request,
     publish_gitee_pr_comment,
-    validate_review_finding_location,
-    web_search,
+    validate_review_finding_location,##===================================
+    web_search,#
 )
 from agent.tools.gitee_api import parse_gitee_repo_url
 
@@ -60,6 +60,7 @@ logger = logging.getLogger(__name__)
 
 # LangGraph 图执行层的最大 super-step 数。它限制的是“图可以走多少步”，
 # 不是单纯限制 LLM 调用次数。这里设大一些，避免复杂 coding 任务被图层过早打断。
+#包括工具执行步
 DEFAULT_RECURSION_LIMIT = 9999
 
 # 模型调用层的保护阈值。它由 ModelCallLimitMiddleware 执行，
@@ -95,7 +96,7 @@ def _task_kind_from_config(configurable: dict[str, Any]) -> TaskKind:
 
 
 
-def ____准备backend__返回混合CompositeBackend__记忆走store__基础函数走sandbox():pass
+def ____新建或复用backends的dict字典thread_id_LocalShellBackend会话线程共享1个后端__返回混合CompositeBackend__记忆走store__基础函数走sandbox():pass
 def ensure_backend_for_thread(thread_id: str) -> LocalShellBackend:
     """获取或创建绑定到 thread 的本地 backend。
 
@@ -136,14 +137,14 @@ def _prepare_repo_backend_context(
     project_dir = repo_project_dir(repo)
     langgraph_store = get_langgraph_store()
     # 初始化只在记忆不存在时写入模板；已有记忆不会被覆盖。
-    ensure_repo_memory_initialized(##===================================##===================================
+    ensure_repo_memory_initialized(##===================================##===================================##===================================##===================================
         store=langgraph_store,
         repo=repo,
         project_dir=project_dir,
     )
     # 顺带读一次记忆内容，传给 ContextInjectionMiddleware 避免重复查询
     memory_content: str | None = None
-    memory_item = langgraph_store.get(##===================================
+    memory_item = langgraph_store.get(##===================================##===================================##===================================##===================================
         build_repo_memory_namespace(repo.owner, repo.repo),
         repo_memory_store_key(repo.owner, repo.repo),
     )
@@ -201,9 +202,9 @@ def _general_purpose_subagent(model: BaseChatModel) -> SubAgent:
     这样可以让主 Agent 保持最终执行权，降低子 Agent 误改代码的风险。
     """
     return {
-        "name": GENERAL_PURPOSE_SUBAGENT["name"],##from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent
-        "description": GENERAL_PURPOSE_SUBAGENT["description"],
-        "system_prompt": GENERAL_PURPOSE_SUBAGENT["system_prompt"],
+        "name": GENERAL_PURPOSE_SUBAGENT["name"],##from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent##===================================##===================================
+        "description": GENERAL_PURPOSE_SUBAGENT["description"],##===================================##===================================
+        "system_prompt": GENERAL_PURPOSE_SUBAGENT["system_prompt"],##===================================##===================================
         "model": model,
         "skills": ["/skills/"],
         "permissions": [
@@ -285,7 +286,7 @@ def _code_reviewer_subagent(model: BaseChatModel) -> SubAgent:
             add_review_finding,
             list_review_findings,
         ],
-        "skills": ["/skills/"],
+        "skills": ["/skills/"],##===================================
         "permissions": [
             FilesystemPermission(
                 operations=["read"],
@@ -320,7 +321,7 @@ def _code_reviewer_subagent(model: BaseChatModel) -> SubAgent:
     }
 
 
-def ________():pass
+def ________FilesystemPermission读写权限():pass
 def _agent_filesystem_permissions() -> list[FilesystemPermission]:
     """主 Agent 的文件系统权限。
 
@@ -396,17 +397,19 @@ def get_agent(config: RunnableConfig):
     configurable = dict(config.get("configurable") or {})
     thread_id = configurable.get("thread_id")##===================================
     config["configurable"] = configurable
-    config["recursion_limit"] = config.get("recursion_limit", DEFAULT_RECURSION_LIMIT)
+    config["recursion_limit"] = config.get("recursion_limit", DEFAULT_RECURSION_LIMIT)####默认递归深度20--设置9999--#不是单纯限制 LLM 调用次数。这里设大一些，避免复杂 coding 任务被图层过早打断。
 
 
-    ##return bool(configurable.get("__is_for_execution__", False))
-    if not isinstance(thread_id, str) or not thread_id or not graph_loaded_for_execution(config):##===================================
+                                                          ##return bool(configurable.get("__is_for_execution__", False))
+    if not isinstance(thread_id, str) or not thread_id    or not graph_loaded_for_execution(config):##===================================
         # 讲课重点：
         # 有些框架或调试脚本会“探测”Agent 图结构，但这不代表要真正执行任务。
         # 这里返回空 Agent，是为了避免没有 thread_id 时就创建 backend、加载工具、
         # 甚至触发文件系统副作用。真实任务必须带 thread_id 且标记执行态。
         logger.info("没有 thread_id 或不是执行态，返回空 Agent")
         return create_deep_agent(system_prompt="", tools=[]).with_config(config)
+
+
     # task_kind 是系统提示词、权限策略和运行保护策略的共同输入。
     task_kind = _task_kind_from_config(configurable)##===================================
     repo_url = configurable.get("repo_url")##===================================
@@ -414,8 +417,13 @@ def get_agent(config: RunnableConfig):
 
 
 
-    # backend 按 thread 复用，避免同一个会话内反复初始化 Windows 工作区封装。
-    backend = ensure_backend_for_thread(thread_id)##===================================##===================================##===================================
+
+    # backend 按 thread 复用，##===================================##===================================##===================================##===================================##===================================##===================================
+    # 避免同一个会话内反复初始化 Windows 工作区封装。##===================================##===================================##===================================##===================================##===================================##===================================
+    ##新建或复用backend的dict字典thread_id_LocalShellBackend会话线程共享1个后端 ##===================================##===================================##===================================##===================================##===================================##===================================
+    ##最好搞一个【池子LocalShellBackend】##===================================##===================================##===================================##===================================##===================================##===================================
+    backend = ensure_backend_for_thread(thread_id)##===================================##===================================##===================================##===================================##===================================##===================================
+    ##
     ##
     # server.py 在创建 Agent 之前，已经顺手读到了当前仓库记忆内容；
     # 那就把内容放进 config，后面的 ContextInjectionMiddleware 直接用，
@@ -450,8 +458,8 @@ def get_agent(config: RunnableConfig):
     # backend/permissions 决定文件系统边界；##===================================
     # middleware 做上下文注入-上下文压缩、消息兼容清洗、参数清洗、和异常恢复；##===================================
     # skills 提供任务方法论；
-    # checkpointer 保存 历史消息
-    # LangGraph thread state。
+    # checkpointer【短期】 保存 历史消息
+    # LangGraph thread state【长期kv形式】。
     return create_deep_agent(  # 创建一个Agent
         model=main_model,
         tools=[
@@ -497,7 +505,7 @@ def get_agent(config: RunnableConfig):
 
 
 
-        skills=["/skills/"],
+        skills=["/skills/"],##===================================
 
 
 
@@ -506,5 +514,5 @@ def get_agent(config: RunnableConfig):
         memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"
         checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
-    ).with_config(config)
+    ).with_config(config)##===================================##===================================
 

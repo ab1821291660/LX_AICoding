@@ -36,7 +36,7 @@ from agent.store.checkpoint_history import visible_checkpoint_messages
 from agent.core.runtime import delete_task, get_task, initialize_task_record, list_tasks, run_agent_task
 from agent.env_utils import get_env
 
-dashboard_router = APIRouter(prefix="/dashboard/api")
+dashboard_router = APIRouter(prefix="/dashboard/api")##===================================
 
 # 页面首次打开或用户没有填写仓库时使用的默认 Gitee 仓库。
 DEFAULT_REPO_URL = "https://gitee.com/msb-goldbin/ai_coding.git"
@@ -254,6 +254,9 @@ def _thread_meta_payload(thread: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+
+
+def ________共7个():pass
 @dashboard_router.get("/me")
 def dashboard_me() -> dict[str, Any]:
     """返回 Dashboard 当前用户信息。
@@ -321,6 +324,9 @@ def dashboard_thread_detail(thread_id: str) -> dict[str, Any]:
     return _thread_payload(task)
 
 
+
+
+def ________3个主要的():pass
 def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> StreamingResponse:
     """直接执行本轮 Agent，并把过程事件作为同一个 POST SSE 响应返回。
 
@@ -337,17 +343,18 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
     # 先创建或更新 thread 业务记录。
     # 注意：这里不负责把用户消息写入 Store；用户消息展示由 SSE 的 user_message 事件负责，
     # 稳定历史恢复由 LangGraph checkpoint 负责。
-    initialize_task_record(repo_url=repo_url, prompt=content, thread_id=thread_id)
-
+    initialize_task_record(repo_url=repo_url, prompt=content, thread_id=thread_id)##===================================
     # 立即读取刚刚创建或更新后的 thread 摘要，后面要用它生成首个 thread_snapshot 事件。
-    initial_task = get_task(thread_id)
-
+    initial_task = get_task(thread_id)##===================================
     # 如果业务 Store 没有读到 thread，说明初始化失败；此时不能继续建立 SSE，否则前端会拿到残缺状态。
     if initial_task is None:
         # 用 HTTP 500 明确告诉前端：不是用户输入问题，而是后端持久化异常。
         raise HTTPException(status_code=500, detail="task was not persisted")
 
-    async def event_iter():
+
+
+
+    async def event_iter():##===================================##===================================##===================================##===================================
         """StreamingResponse 的异步事件生成器。
 
         Agent 本身在工作线程中同步运行；SSE 响应在 asyncio 事件循环中异步发送。
@@ -355,7 +362,7 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
         """
 
         # 获取当前 FastAPI 请求所在的 asyncio 事件循环；worker 线程投递事件时需要回到这个 loop。
-        loop = asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()##===================================##===================================##===================================##===================================
 
         # 创建本轮 SSE 的内存队列。worker 线程负责生产事件，event_iter 负责消费并 yield 给浏览器。
         queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
@@ -370,7 +377,7 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
             payload.setdefault("thread_id", thread_id)
 
             # worker 运行在普通线程，不能直接 await queue.put；必须通过事件循环线程安全投递。
-            loop.call_soon_threadsafe(queue.put_nowait, (event, payload))
+            loop.call_soon_threadsafe(queue.put_nowait, (event, payload))##===================================##===================================
 
         def event_sink(event: str, data: dict[str, Any]) -> None:
             """runtime/streaming_runtime 使用的统一实时事件出口。
@@ -392,7 +399,7 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
                     return
 
             # 其它事件，例如 message_start、todo_delta、thread_done，直接进入 SSE 队列。
-            enqueue(event, payload)
+            enqueue(event, payload)##===================================##===================================
 
         def worker() -> None:
             """在后台线程中运行一次 Agent 任务。
@@ -403,15 +410,15 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
             # worker 线程内部必须捕获异常，否则线程异常只会写到后端日志，前端收不到失败事件。
             try:
                 # 真正运行 Agent 的入口。runtime会做任务分类、方案确认、Agent构建、和事件流消费。
-                run_agent_task(##===================================
+                run_agent_task(##===================================##===================================##===================================##===================================
                     # 本轮任务绑定的 Gitee 仓库地址，已经在外层 API 边界做过规范化。
                     repo_url=repo_url,
-                    # 用户本轮真实输入，runtime 会根据任务类型--决定是否包装内部执行上下文。##===================================
+                    # 用户本轮真实输入，##===================================runtime 会根据任务类型决定是否包装内部执行上下文。
                     prompt=content,
                     # 当前会话 id，用于绑定 Store、checkpoint、SSE 和 Agent config。
                     thread_id=thread_id,
                     # 把 runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
-                    event_sink=event_sink,##===================================
+                    event_sink=event_sink,##===================================##===================================##===================================##===================================
                 )
 
                 # Agent 正常结束后，重新读取最新 thread 摘要，里面可能已经包含分支、PR、状态等新信息。
@@ -434,6 +441,10 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
 
                 # 失败路径同样必须发送 done，否则浏览器会一直等待 SSE 结束。
                 enqueue("done", {})
+
+
+
+
 
         # 第一个事件只发送 thread 元信息，不发送 messages。
         # 前端当前轮用户输入和 assistant 流式正文必须由后续事件追加，不能被 snapshot 覆盖。
@@ -489,16 +500,23 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
             },
         )
 
-        # 创建后台线程执行 Agent。线程名带 thread_id，方便从日志或调试工具定位。
-        thread = threading.Thread(target=worker, name=f"lx-aicoding-stream-{thread_id}", daemon=True)
 
+
+
+        # 创建后台线程执行 Agent。线程名带 thread_id，方便从日志或调试工具定位。
+        thread = threading.Thread(target=worker,##===================================##===================================##===================================##===================================
+                                  name=f"lx-aicoding-stream-{thread_id}",
+                                  daemon=True)
         # 启动 worker 后，Agent 才真正开始运行；event_iter 继续留在 asyncio loop 里发送 SSE。
-        thread.start()
+        thread.start()##===================================##===================================##===================================##===================================
+
+
+
 
         # 持续消费 worker/event_sink 投递到 queue 中的事件。
         while True:
             # 持续从队列取事件并写入 SSE 响应。收到 done 后结束本次 HTTP 连接。
-            event, data = await queue.get() # 阻塞等待事件。
+            event, data = await queue.get() # 阻塞等待事件。##===================================##===================================
 
             # 把内部事件名和 payload 转成标准 SSE 文本块。
             yield _sse_part(event, data)
@@ -507,10 +525,13 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
             if event == "done":
                 break
 
+
+
+
     # 返回 FastAPI StreamingResponse，让浏览器可以边接收边渲染本轮 Agent 输出。
-    return StreamingResponse(
+    return StreamingResponse(##===================================##===================================
         # event_iter 是异步生成器，每次 yield 都会向 HTTP 响应体写入一段 SSE。
-        event_iter(),
+        event_iter(),##===================================##===================================
         # SSE 必须使用 text/event-stream，前端才会按事件流处理。
         media_type="text/event-stream",
         # 这些 header 用来降低代理和浏览器缓冲对实时输出的影响。
@@ -525,16 +546,18 @@ def _post_streaming_response(*, thread_id: str, repo_url: str, content: str) -> 
     )
 
 
+
+
 @dashboard_router.post("/threads/stream-message")
 async def dashboard_stream_new_message(body: DashboardThreadMessageRequest) -> StreamingResponse:
     """创建新会话并通过 POST SSE 返回实时运行过程。"""
 
-    repo_url = _normalize_dashboard_repo_url(body.repo)
+    repo_url = _normalize_dashboard_repo_url(body.repo)##===================================
     thread_id = str(uuid.uuid4())
-    return _post_streaming_response(thread_id=thread_id, repo_url=repo_url, content=body.content)
+    return _post_streaming_response(thread_id=thread_id, repo_url=repo_url, content=body.content)##===================================
 
 
-@dashboard_router.post("/threads/{thread_id}/stream-message")
+@dashboard_router.post("/threads/{thread_id}/stream-message")  ##===================================##===================================##===================================##===================================
 async def dashboard_stream_existing_message(
     thread_id: str,
     body: DashboardThreadMessageRequest,
@@ -544,7 +567,7 @@ async def dashboard_stream_existing_message(
     如果请求体没有带 repo，则复用当前 thread 在 Store 中保存的 repo_url。
     """
 
-    task = get_task(thread_id)
+    task = get_task(thread_id)##===================================
     repo_url = _normalize_dashboard_repo_url(body.repo, fallback=(task or {}).get("repo_url"))
     return _post_streaming_response(thread_id=thread_id, repo_url=repo_url, content=body.content)
 
@@ -553,11 +576,13 @@ async def dashboard_stream_existing_message(
 def dashboard_delete_thread(thread_id: str) -> None:
     """删除 Dashboard 会话。
 
-    删除动作由 runtime.delete_task 完成，它会清理业务 Store 和 LangGraph checkpoint。
+    删除动作由 runtime.delete_task 完成，它会清理
+    业务 Store 和 ##===================================
+    LangGraph checkpoint。##===================================
     正常历史展示不从 Store 读正文，但删除时必须同时清理两边，避免残留状态。
     """
 
-    deleted = delete_task(thread_id)
+    deleted = delete_task(thread_id)##===================================
     if not deleted:
         raise HTTPException(status_code=404, detail="thread not found")
     return None

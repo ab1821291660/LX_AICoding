@@ -29,6 +29,7 @@ def _compact_diff_for_model(raw_diff: str, *, limit: int = 20000) -> str:
     return text[:limit].rstrip() + "\n\n...（diff 内容过长，已截断；必要时请读取具体文件继续审查）"
 
 
+def ____读取内置默认规则reviewer_rules__default_review_rules():pass
 @tool
 def load_default_review_rules() -> dict[str, Any]:
     """读取项目内置的默认代码审查规则。
