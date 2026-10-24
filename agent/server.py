@@ -381,7 +381,7 @@ def ________():pass
 #     configurable["repo_url"] = repo_url
 # return get_agent({"configurable": configurable}) ##===================================
 
-    # if repo_memory_content:
+    # if repo_memory_content:##见server的434行----
     #     configurable["_repo_memory_content"] = repo_memory_content ##===================================
 def get_agent(config: RunnableConfig):
     """按照 指定 thread 构建 DeepAgent。
@@ -511,7 +511,8 @@ def get_agent(config: RunnableConfig):
 
         # memory 只声明 Agent 可以访问的长期记忆文件路径；
         # 具体读写会通过上面的 /memories/ StoreBackend 路由完成。
-        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"
+        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"##===================================##===================================##===================================##===================================
+        ##
         checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
     ).with_config(config)##===================================##===================================

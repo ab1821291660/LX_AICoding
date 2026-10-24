@@ -930,29 +930,31 @@ def run_agent_task(##===================================##======================
                 or _latest_non_approval_user_prompt(thread_id, existing_thread.get("user_prompt") or prompt)##===================================
             )
             task_kind = "coding"##===================================
-    elif existing_thread:##不是确认实施----修改/重新生成/补充方案--#方案修订仍然是 planning，只重新生成完整新版方案，不进入 coding。##===================================##===================================##===================================##===================================
-        # 如果当前会话已经有一版等待确认的技术方案，而用户没有确认实施，
-        # 只有用户明确说“修改/重新生成/补充方案”时，才把这轮输入视为方案修订。
-        # 普通问答、代码审查、查看记忆文件等只读任务不能被历史方案劫持。 ##===================================
-        plan_message = _latest_confirmable_plan_message(thread_id) \
-                       if _is_plan_revision_prompt(prompt)  else None##修改/重新生成/补充方案 ##===================================
-        if plan_message is not None and prompt.strip():
-            ## planning
-            return run_plan_response_task(#方案修订仍然是planning，只重新生成完整新版方案，不进入coding。##===================================
-                                            repo_url=repo_url,
-                                            prompt=_plan_source_prompt(plan_message, _latest_non_approval_user_prompt(thread_id, prompt)),
-                                            thread_id=thread_id,
-
-                                            previous_plan_message=plan_message,
-                                            revision_prompt=prompt,
-
-                                            event_sink=event_sink,## #把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
-                                        )
+    # elif existing_thread:##不是确认实施----修改/重新生成/补充方案--#方案修订仍然是 planning，只重新生成完整新版方案，不进入 coding。##===================================##===================================##===================================##===================================
+    #     # 如果当前会话已经有一版等待确认的技术方案，而用户没有确认实施，
+    #     # 只有用户明确说“修改/重新生成/补充方案”时，才把这轮输入视为方案修订。
+    #     # 普通问答、代码审查、查看记忆文件等只读任务不能被历史方案劫持。 ##===================================
+    #     plan_message = _latest_confirmable_plan_message(thread_id) \
+    #                    if _is_plan_revision_prompt(prompt)  else None##修改/重新生成/补充方案 ##===================================##===================================
+    #     if plan_message is not None  and prompt.strip():#有可确认的技术方案时 ++##修改/重新生成/补充方案##===================================##===================================
+    #         ## planning
+    #         return run_plan_response_task(#方案修订仍然是planning，只重新生成完整新版方案，不进入coding。##===================================
+    #                                         repo_url=repo_url,
+    #                                         prompt=_plan_source_prompt(plan_message, _latest_non_approval_user_prompt(thread_id, prompt)),
+    #                                         thread_id=thread_id,
+    #
+    #                                         previous_plan_message=plan_message,
+    #                                         revision_prompt=prompt,
+    #
+    #                                         event_sink=event_sink,## #把runtime/streaming_runtime 产生的实时事件送回本函数的 SSE 队列。
+    #                                     )
     if existing_thread and \
             approved_plan_text is None \
-            and _is_approval_prompt(prompt):##确认实施
-        # 没有可确认的技术方案时，，把“确认”当作普通问题处理，避免误执行旧任务。
+            and _is_approval_prompt(prompt):
+        # 没有可确认的技术方案时，，把“确认认实施”,,当作普通问题处理，避免误执行旧任务。 ##===================================##===================================##===================================##===================================
         task_kind = classify_task_kind(prompt)##===================================##===================================##===================================##===================================
+
+
 
 
     if approved_plan_text is not None:

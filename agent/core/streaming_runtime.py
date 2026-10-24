@@ -516,6 +516,7 @@ def _record_subagent(thread_id: str, run_id: str, subagent: Any, index: int) -> 
     )
 
 
+def ________主入口__raw__():pass
 def _consume_raw_event_stream(
     *,
     stream: Any,
@@ -562,13 +563,15 @@ def _consume_raw_event_stream(
     for event in stream:##===================================
         # 每个 raw event 都先交给保护器计数。它可以识别模型调用过多、工具循环等异常。
         limit_tracker.observe_event(event)##===================================##===================================
-        marker = _text_block_marker_from_event(event)
+
+
+        marker = _text_block_marker_from_event(event)##===================================
         if marker is not None:
             marker_kind, _block_index = marker
             if marker_kind == "start":
                 # 新文本块开始前，如果上一段还有未刷新的尾巴，先落库/推送。
                 if current_assistant_text and last_flushed_length != len(current_assistant_text):
-                    _record_assistant_stream_message(
+                    _record_assistant_stream_message(##===================================
                         thread_id,
                         run_id,
                         current_assistant_index or assistant_message_index or 1,
@@ -583,7 +586,7 @@ def _consume_raw_event_stream(
             if marker_kind == "finish":
                 # 文本块结束时做最终刷新，然后清空当前块状态。
                 if current_assistant_text and last_flushed_length != len(current_assistant_text):
-                    _record_assistant_stream_message(
+                    _record_assistant_stream_message(##===================================
                         thread_id,
                         run_id,
                         current_assistant_index or assistant_message_index or 1,
@@ -595,7 +598,8 @@ def _consume_raw_event_stream(
                 last_flushed_length = 0
                 continue
 
-        delta = _text_delta_from_event(event)
+
+        delta = _text_delta_from_event(event)##===================================
         if delta:
             if current_assistant_index == 0:
                 # 有些模型流不会显式给 content-block-start，这里按第一个 delta 自动开块。
@@ -609,7 +613,7 @@ def _consume_raw_event_stream(
                 last_flushed_length=last_flushed_length,
                 delta=delta,
             ):
-                _record_assistant_stream_message(
+                _record_assistant_stream_message(##===================================
                     thread_id,
                     run_id,
                     current_assistant_index,
@@ -619,7 +623,8 @@ def _consume_raw_event_stream(
                 last_flushed_length = len(current_assistant_text)
             continue
 
-        tool_chunk = _tool_chunk_from_message_event(event)
+
+        tool_chunk = _tool_chunk_from_message_event(event)##===================================
         if tool_chunk is not None:
             tool_name = str(tool_chunk.get("name") or "")
             if tool_name == "write_todos":
