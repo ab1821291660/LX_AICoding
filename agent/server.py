@@ -479,8 +479,8 @@ def get_agent(config: RunnableConfig):
 
 
         system_prompt=get_system_prompt(task_kind),
-        subagents=[_general_purpose_subagent(subagent_model), ##===================================##===================================
-                   _code_reviewer_subagent(subagent_model)], ##===================================##===================================
+        subagents=[_general_purpose_subagent(subagent_model), ##===================================##===================================- Agent身份标识：在流式输出或日志中，可以通过消息元数据中的lc_agent_name区分输出来自哪个Agent。
+                   _code_reviewer_subagent(subagent_model)], ##===================================##===================================- Agent身份标识：在流式输出或日志中，可以通过消息元数据中的lc_agent_name区分输出来自哪个Agent。
         backend=backend_factory,
         permissions=_agent_filesystem_permissions(),##===================================
         # 精简对话工具 compact_conversation
@@ -516,4 +516,13 @@ def get_agent(config: RunnableConfig):
         checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
     ).with_config(config)##===================================##===================================
+# 上下文与配置的传递
+# - 自动传递：主Agent调用时的config（包含context、metadata等）会自动传递给子Agent。这意味着子Agent及其工具可以访问主Agent会话的上下文信息（如用户ID）。
+# @tool
+# def personalized_search(query: str, config) -> str:
+#     """根据当前用户上下文进行搜索。"""
+#     user_id = config.get("context", {}).get("user_id", "anonymous")##===================================
+#     return f"为用户{user_id}搜索: {query}。结果是..."
+
+
 
