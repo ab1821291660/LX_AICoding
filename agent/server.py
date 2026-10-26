@@ -189,7 +189,7 @@ def create_repo_backend(
         routes={
             # /memories/是虚拟路径，
             # 不对应Windows真实目录。
-            # DeepAgents原生memory=[...] 会通过这里落到LangGraph Store。
+            # #具体读写会通过上面的 /memories/ StoreBackend 路由完成。----DeepAgents原生memory=[...] 会通过这里落到LangGraph Store。
             "/memories/":
                             StoreBackend(
                                     store=store,
@@ -515,10 +515,10 @@ def get_agent(config: RunnableConfig):
 
 
 
-        # memory 只声明 Agent 可以访问的长期记忆文件路径；
-        # 具体读写会通过上面的 /memories/ StoreBackend 路由完成。
+        #memory只声明Agent可以访问的长期记忆文件路径；
+        #具体读写会通过上面的 /memories/ StoreBackend 路由完成。
         ##memory=["/project/AGENTS.md", "~/.deepagents/preferences.md"],
-        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md----为本地的store的kv存储 ##===================================##===================================##===================================##===================================
+        memory=memory_paths, ##return f"/memories/{owner}/{repo}.md----为本地的store的kv存储 ##===================================##===================================##===================================##===================================
         ##
         checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
