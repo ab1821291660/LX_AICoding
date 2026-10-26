@@ -178,6 +178,12 @@ def create_repo_backend(
     # 返回CompositeBackend后，Agent内部读/memories/... 会走StoreBackend，##===================================##===================================##===================================
     # 读 /projects/...、执行命令和读取 skills 仍然走 LocalShellBackend。##===================================##===================================##===================================
     namespace = build_repo_memory_namespace(owner, repo)# ("lx-aicoding", "repo-memory", owner.lower(), repo.lower())
+    ##CompositeBackend (复合/路由后端)
+    # - 工作原理：作为后端路由器，根据文件路径的前缀，将操作定向到不同的底层后端。
+    # - 最佳用途：实现混合存储策略。例如，
+    #           临时工作文件用 StateBackend，##===================================
+    #           长期记忆用 StoreBackend，##===================================
+    #           特定目录映射到本地磁盘。##===================================
     return CompositeBackend(
         default=local_backend,# default backend 覆盖绝大多数路径和命令执行能力。
         routes={
@@ -505,24 +511,59 @@ def get_agent(config: RunnableConfig):
 
 
 
-        skills=["/skills/"],##===================================
+        skills=["/skills/"],##===================================["/skills/research/", "/skills/web-search/"],
 
 
 
         # memory 只声明 Agent 可以访问的长期记忆文件路径；
         # 具体读写会通过上面的 /memories/ StoreBackend 路由完成。
-        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md"##===================================##===================================##===================================##===================================
+        ##memory=["/project/AGENTS.md", "~/.deepagents/preferences.md"],
+        memory=memory_paths, ##memory_path = ##return f"/memories/{owner}/{repo}.md----为本地的store的kv存储 ##===================================##===================================##===================================##===================================
         ##
         checkpointer=get_checkpointer(),# checkpointer 是聊天历史、工具消息和图状态的权威来源。前端历史恢复应读取 checkpoint，，不应读取业务 Store 事件。
         store=langgraph_store,# store传给DeepAgents/中间件，主要服务长期记忆等业务数据，不参与前端历史展示。
     ).with_config(config)##===================================##===================================
-# 上下文与配置的传递
-# - 自动传递：主Agent调用时的config（包含context、metadata等）会自动传递给子Agent。这意味着子Agent及其工具可以访问主Agent会话的上下文信息（如用户ID）。
+# 从Agent到手撕OpenClaw的企业实战
+# 链接：https://my.feishu.cn/docx/X61gdFjdzou0tgx1NvlcHlYyn4d?from=from_copylink
+# 密码：154&56n8
+##
+##
+# 上下文与配置的传递::运行时上下文还会自动传播给所有子智能体，父智能体的上下文在子智能体内部同样可用。
+# - 自动传递：主Agent调用时的config（包含configurable、context_schema【runtime.context】、metadata等）会自动传递给子Agent。这意味着子Agent及其工具可以访问主Agent会话的上下文信息（如用户ID）。
 # @tool
 # def personalized_search(query: str, config) -> str:
 #     """根据当前用户上下文进行搜索。"""
-#     user_id = config.get("context", {}).get("user_id", "anonymous")##===================================
+#     user_id = config.get("context", {}).get("user_id", "anonymous")##===================================##===================================
 #     return f"为用户{user_id}搜索: {query}。结果是..."
-
+# - Agent身份标识：在流式输出或日志中，可以通过消息元数据中的lc_agent_name区分输出来自哪个Agent。
+##
+##
+# # 2、运行时上下文(Runtime context)--运行时上下文还会自动传播给所有子智能体，父智能体的上下文在子智能体内部同样可用。
+# from dataclasses import dataclass
+# from deepagents import create_deep_agent
+# from langchain.tools import tool, ToolRuntime
+# @tool
+# def fetch_user_data(query: str, runtime: ToolRuntime[Context]) -> str:
+#     """获取当前用户的数据。"""
+#     user_id = runtime.context.user_id##===================================
+#     # 这里可以使用 runtime.context.api_key 进行认证
+#     return f"用户 {user_id} 的数据：{query}"
+#
+#
+# @dataclass
+# class Context:##===================================
+#     user_id: str
+#     api_key: str
+# agent = create_deep_agent(
+#     model="google_genai:gemini-3.1-pro-preview",
+#     tools=[fetch_user_data],
+#     context_schema=Context,##===================================
+# )
+# # 调用时传入上下文
+# result = agent.invoke(
+#     {"messages": [{"role": "user", "content": "获取我最近的活动"}]},
+#     context=Context(user_id="user-123", api_key="sk-..."),##===================================
+# )
+# print(result)
 
 
